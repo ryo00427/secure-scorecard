@@ -150,7 +150,7 @@
   - セッション無効化処理
   - _Requirements: 6.5_
 
-- [ ] 5.4 AuthService - JWT トークンブラックリスト実装
+- [x] 5.4 AuthService - JWT トークンブラックリスト実装
   - ログアウト時にトークンハッシュ（SHA-256）をtoken_blacklistテーブルに保存
   - JWT検証ミドルウェアでブラックリストチェック追加（トークン検証前）
   - ブラックリスト登録済みトークンは401 Unauthorizedで拒否

@@ -6,13 +6,13 @@
 
 ### 必ず確認すべき公式ドキュメント
 
-| 技術 | URL |
-|------|-----|
-| Turborepo | https://turbo.build/repo/docs |
-| pnpm | https://pnpm.io/ja/ |
-| Expo | https://docs.expo.dev/ |
-| React Native | https://reactnative.dev/docs/getting-started |
-| Echo (Go) | https://echo.labstack.com/docs |
+| 技術          | URL                                                               |
+| ------------- | ----------------------------------------------------------------- |
+| Turborepo     | https://turbo.build/repo/docs                                     |
+| pnpm          | https://pnpm.io/ja/                                               |
+| Expo          | https://docs.expo.dev/                                            |
+| React Native  | https://reactnative.dev/docs/getting-started                      |
+| Echo (Go)     | https://echo.labstack.com/docs                                    |
 | Terraform AWS | https://registry.terraform.io/providers/hashicorp/aws/latest/docs |
 
 ### Context7 MCP ツールの活用
@@ -31,15 +31,24 @@
 
 ## 過去の失敗から学んだ教訓
 
+## コード実装の際には設計原則を遵守する事
+
+以下の.mdを必ず参照する事
+.kiro\steering\product.md
+.kiro\steering\structure.md
+.kiro\steering\tech.md
+
 ### 0. IDEの診断エラーは実際のビルドで確認する
 
 **問題**: ファイル編集後、IDEが「imported and not used」などのエラーを表示し続ける
 
 **原因**:
+
 - IDEのキャッシュ問題で、変更が即座に反映されない
 - 特に複数ファイルを連続して編集する場合、IDEが追いつかない
 
 **対策**:
+
 ```
 IDEエラー確認フロー:
 1. IDEで赤い波線が表示される
@@ -56,10 +65,12 @@ IDEエラー確認フロー:
 **問題**: 複数ファイルにまたがる変更を段階的に行うと、途中で不整合が生じる
 
 **原因**:
+
 - 関数シグネチャを変更したが、呼び出し側を後で変更した
 - 新しいパッケージをインポートしたが、使用箇所を後で追加した
 
 **対策**:
+
 ```
 複数ファイル変更時のベストプラクティス:
 □ 変更の影響範囲を事前に把握する
@@ -77,6 +88,7 @@ IDEエラー確認フロー:
 **失敗例**: 設定ファイルを作成して「環境構築完了」としたが、実際に動かすとエラーが多発
 
 **原因**:
+
 - 設定ファイルを書いただけで終わり、実際の動作確認をしていない
 - 「ファイルがある」≠「動く」という認識の欠如
 - 部分的な確認（例: `pnpm install` 成功）で全体が動くと思い込む
@@ -103,10 +115,12 @@ IDEエラー確認フロー:
 **失敗例**: tasks.md に `packages/backend` と書いたが、実際は `apps/backend` で実装
 
 **原因**:
+
 - 設計フェーズと実装フェーズで構成を変更した
 - 変更後にドキュメントを更新しなかった
 
 **対策**:
+
 - 構成を変更したら、関連ドキュメントも即座に更新
 - テストファイルの期待値も実装に合わせる
 - 定期的に `仕様 vs 実装` の差分をチェック
@@ -118,15 +132,18 @@ IDEエラー確認フロー:
 □ README.md
 □ CLAUDE.md
 □ tests/ 内のテスト期待値
+□
 ```
 
 ### 1. 構造変更時は全ファイルの整合性を確認する
 
 **失敗例**: `packages/` → `apps/` + `packages/` に変更した際、以下を更新し忘れた：
+
 - テストファイル（期待値が旧構造のまま）
 - `package.json` の workspaces（`pnpm-workspace.yaml` だけ更新）
 
 **対策**:
+
 ```
 構造変更時のチェックリスト:
 □ pnpm-workspace.yaml
@@ -142,6 +159,7 @@ IDEエラー確認フロー:
 **失敗例**: Turbo v2 の `tasks` 形式で書いたが、テストは v1 の `pipeline` を期待していた
 
 **対策**:
+
 - Turborepo 2.x では `pipeline` → `tasks` に変更された
 - テスト作成時は実際の設定ファイルの形式を確認してから期待値を書く
 
@@ -150,6 +168,7 @@ IDEエラー確認フロー:
 **失敗例**: `apps/backend/package.json` に Go スクリプトを書いたが、`go.mod` も `cmd/server/` も作らなかった
 
 **対策**:
+
 - ビルド/テストスクリプトを書いたら、最低限のスケルトンコードも作成する
 - Go の場合: `go.mod` + `cmd/xxx/main.go`
 - TypeScript の場合: `tsconfig.json` + `src/index.ts`
@@ -159,6 +178,7 @@ IDEエラー確認フロー:
 **失敗例**: pnpm は `pnpm-workspace.yaml` と `package.json` の workspaces 両方を見る
 
 **対策**:
+
 - pnpm モノレポでは両方を同期させる必要がある
 - `pnpm-workspace.yaml` が優先されるが、npm/yarn 互換のため `package.json` も更新する
 
@@ -167,10 +187,12 @@ IDEエラー確認フロー:
 **失敗例**: Expo プロジェクトを手動で設定したら、エントリーポイント・依存関係・アセットが欠落
 
 **原因**:
+
 - 設定を「部分的に」追加していくと、依存関係の全体像を見失う
 - 公式テンプレートが持つ暗黙の前提条件を見落とす
 
 **対策**:
+
 ```bash
 # 悪い例: 空のフォルダに手動で設定を追加
 mkdir my-app && cd my-app
@@ -186,11 +208,13 @@ npx create-expo-app my-app --template blank-typescript
 **失敗例**: `Unable to resolve "../../App" from "node_modules\expo\AppEntry.js"`
 
 **原因**:
+
 - `expo/AppEntry.js` は `../../App` を相対パスでインポートする
 - pnpm ホイスティングにより `expo` がルートの `node_modules` に配置される
 - 結果、`../../App` が正しいパスを指さない
 
 **対策**: カスタムエントリーポイントを作成
+
 ```javascript
 // apps/mobile/index.js
 import { registerRootComponent } from 'expo';
@@ -207,6 +231,7 @@ registerRootComponent(App);
 ```
 
 **チェックリスト（Expo プロジェクト）**:
+
 ```
 □ package.json: "main": "./index.js" (モノレポの場合)
 □ app.json: expo.name, expo.slug, expo.version
@@ -221,14 +246,83 @@ registerRootComponent(App);
 **失敗例**: `Cannot find module 'babel-preset-expo'` エラー
 
 **原因**:
+
 - pnpm はデフォルトで厳格な依存関係解決（phantom dependencies を防ぐ）
 - Expo/React Native は依存関係の hoisting を前提としている
 
 **対策**: `.npmrc` を作成
+
 ```
 shamefully-hoist=true
 node-linker=hoisted
 ```
+
+### 8. N+1問題を防ぐ（データベース操作）
+
+**失敗例**: DeleteGarden メソッドでループ内で個別削除を実行（1 + N + 1 クエリ）
+
+```go
+// 🔴 悪い例: N+1問題
+plants, _ := repo.GetByGardenID(ctx, gardenID)  // 1回
+for _, plant := range plants {
+    repo.Delete(ctx, plant.ID)  // N回（plant の数だけクエリ）
+}
+repo.DeleteGarden(ctx, gardenID)  // 1回
+// 合計: 1 + N + 1 クエリ
+```
+
+**原因**:
+
+- 単一削除メソッドをループで再利用した（実装が簡単だった）
+- パフォーマンスへの配慮不足（「動けばいい」で実装）
+- 少量データでは問題が顕在化しない（3-5個なら気づかない）
+- トランザクション内なのでエラーが出ない
+
+**対策**: バッチ操作を優先する
+
+```go
+// ✅ 良い例: バッチ削除
+repo.DeleteByGardenID(ctx, gardenID)  // 1回（WHERE条件で一括削除）
+repo.DeleteGarden(ctx, gardenID)      // 1回
+// 合計: 2 クエリ
+```
+
+**N+1問題チェックリスト**:
+
+```
+実装時:
+□ ループ内でDB操作をしていないか？
+  - repository メソッド呼び出し
+  - SELECT/UPDATE/DELETE クエリ
+□ 取得したリストを1件ずつ処理していないか？
+□ バッチ操作が可能か？
+  - WHERE IN (ids...)
+  - WHERE column = value （複数行に適用）
+  - GORM の Create/Update/Delete with slice
+
+コードレビュー時:
+□ for/range ループ内に repository 呼び出しがないか
+□ トランザクション内のクエリ数を数える
+□ 「N件のデータがあったら何クエリ？」を想像する
+```
+
+**GORM のバッチ操作パターン**:
+
+```go
+// 複数IDで削除
+db.Delete(&Model{}, []uint{1, 2, 3, 4, 5})
+
+// WHERE条件で一括削除
+db.Where("parent_id = ?", parentID).Delete(&Model{})
+
+// 複数件を一括作成
+db.Create(&[]Model{...})
+
+// 複数件を一括更新
+db.Model(&Model{}).Where("status = ?", "old").Update("status", "new")
+```
+
+**重要**: ループでDB操作を見たら N+1 問題を疑う
 
 ## モノレポ構成
 

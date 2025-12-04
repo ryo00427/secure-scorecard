@@ -51,11 +51,19 @@ type Plant struct {
 // CareLog represents a care activity for a plant
 type CareLog struct {
 	BaseModel
-	PlantID   uint      `gorm:"index" json:"plant_id"`
-	Type      string    `gorm:"size:50;not null" json:"type"` // watering, fertilizing, pruning, etc.
-	Notes     string    `gorm:"size:500" json:"notes,omitempty"`
-	CaredAt   time.Time `json:"cared_at"`
-	Plant     Plant     `gorm:"foreignKey:PlantID" json:"plant,omitempty"`
+	PlantID uint      `gorm:"index" json:"plant_id"`
+	Type    string    `gorm:"size:50;not null" json:"type"` // watering, fertilizing, pruning, etc.
+	Notes   string    `gorm:"size:500" json:"notes,omitempty"`
+	CaredAt time.Time `json:"cared_at"`
+	Plant   Plant     `gorm:"foreignKey:PlantID" json:"plant,omitempty"`
+}
+
+// TokenBlacklist represents a blacklisted JWT token
+type TokenBlacklist struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	TokenHash string    `gorm:"uniqueIndex;size:64;not null" json:"token_hash"` // SHA-256 hash
+	RevokedAt time.Time `gorm:"not null;index" json:"revoked_at"`
+	ExpiresAt time.Time `gorm:"not null;index" json:"expires_at"`
 }
 
 // TableName overrides the table name for User
@@ -76,4 +84,9 @@ func (Plant) TableName() string {
 // TableName overrides the table name for CareLog
 func (CareLog) TableName() string {
 	return "care_logs"
+}
+
+// TableName overrides the table name for TokenBlacklist
+func (TokenBlacklist) TableName() string {
+	return "token_blacklist"
 }

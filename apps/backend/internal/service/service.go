@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/secure-scorecard/backend/internal/model"
 	"github.com/secure-scorecard/backend/internal/repository"
@@ -102,17 +103,9 @@ func (s *Service) UpdateGarden(ctx context.Context, garden *model.Garden) error 
 // DeleteGarden soft deletes a garden and all its plants (with transaction)
 func (s *Service) DeleteGarden(ctx context.Context, id uint) error {
 	return s.repos.WithTransaction(ctx, func(txCtx context.Context) error {
-		// Get all plants in the garden
-		plants, err := s.repos.Plant().GetByGardenID(txCtx, id)
-		if err != nil {
+		// Batch delete all plants in the garden (prevents N+1 query problem)
+		if err := s.repos.Plant().DeleteByGardenID(txCtx, id); err != nil {
 			return err
-		}
-
-		// Delete all plants
-		for _, plant := range plants {
-			if err := s.repos.Plant().Delete(txCtx, plant.ID); err != nil {
-				return err
-			}
 		}
 
 		// Delete the garden
@@ -157,4 +150,16 @@ func (s *Service) CreateCareLog(ctx context.Context, careLog *model.CareLog) err
 // GetPlantCareLogs retrieves all care logs for a plant
 func (s *Service) GetPlantCareLogs(ctx context.Context, plantID uint) ([]model.CareLog, error) {
 	return s.repos.CareLog().GetByPlantID(ctx, plantID)
+}
+
+// --- Token Blacklist Service Methods ---
+
+// BlacklistToken adds a token to the blacklist
+func (s *Service) BlacklistToken(ctx context.Context, tokenHash string, expiresAt time.Time) error {
+	return s.repos.TokenBlacklist().Add(ctx, tokenHash, expiresAt)
+}
+
+// CleanupExpiredTokens removes expired tokens from the blacklist
+func (s *Service) CleanupExpiredTokens(ctx context.Context) error {
+	return s.repos.TokenBlacklist().DeleteExpired(ctx)
 }

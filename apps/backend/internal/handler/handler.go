@@ -37,13 +37,13 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 
 	// Protected auth endpoints
 	authProtected := authGroup.Group("")
-	authProtected.Use(auth.AuthMiddleware(h.jwtManager))
+	authProtected.Use(auth.AuthMiddleware(h.jwtManager, h.service))
 	authProtected.POST("/refresh", authHandler.RefreshToken)
 	authProtected.GET("/me", authHandler.Me)
 
 	// Protected API endpoints
 	protected := api.Group("")
-	protected.Use(auth.AuthMiddleware(h.jwtManager))
+	protected.Use(auth.AuthMiddleware(h.jwtManager, h.service))
 
 	// Gardens endpoints (protected)
 	gardens := protected.Group("/gardens")
