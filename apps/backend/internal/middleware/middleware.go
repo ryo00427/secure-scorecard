@@ -3,10 +3,11 @@ package middleware
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/secure-scorecard/backend/internal/config"
 )
 
 // SetupMiddleware configures all middleware for the application
-func SetupMiddleware(e *echo.Echo) {
+func SetupMiddleware(e *echo.Echo, cfg *config.Config) {
 	// Request ID
 	e.Use(middleware.RequestID())
 
@@ -18,11 +19,12 @@ func SetupMiddleware(e *echo.Echo) {
 	// Recover from panics
 	e.Use(middleware.Recover())
 
-	// CORS
+	// CORS with whitelisted origins
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.PATCH, echo.OPTIONS},
-		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
+		AllowOrigins:     cfg.CORS.AllowedOrigins,
+		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.PATCH, echo.OPTIONS},
+		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
+		AllowCredentials: true, // Required for cookies
 	}))
 
 	// Secure headers
@@ -35,11 +37,3 @@ func SetupMiddleware(e *echo.Echo) {
 	}))
 }
 
-// JWTConfig returns the JWT middleware configuration
-// TODO: Implement proper JWT validation with Firebase
-func JWTConfig(secret string) middleware.JWTConfig {
-	return middleware.JWTConfig{
-		SigningKey: []byte(secret),
-		ContextKey: "user",
-	}
-}

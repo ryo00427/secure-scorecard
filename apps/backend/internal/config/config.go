@@ -13,6 +13,7 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	JWT      JWTConfig
+	CORS     CORSConfig
 }
 
 // ServerConfig holds server-specific configuration
@@ -37,6 +38,11 @@ type JWTConfig struct {
 	ExpireHour int
 }
 
+// CORSConfig holds CORS-specific configuration
+type CORSConfig struct {
+	AllowedOrigins []string
+}
+
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
@@ -59,6 +65,9 @@ func Load() (*Config, error) {
 		JWT: JWTConfig{
 			Secret:     getEnv("JWT_SECRET", "dev-secret-change-in-production"),
 			ExpireHour: getEnvAsInt("JWT_EXPIRE_HOUR", 24),
+		},
+		CORS: CORSConfig{
+			AllowedOrigins: getEnvAsSlice("CORS_ALLOWED_ORIGINS", []string{"http://localhost:3000", "http://localhost:8081"}),
 		},
 	}
 
@@ -86,6 +95,37 @@ func getEnvAsInt(key string, defaultValue int) int {
 	if value, exists := os.LookupEnv(key); exists {
 		if intValue, err := strconv.Atoi(value); err == nil {
 			return intValue
+		}
+	}
+	return defaultValue
+}
+
+// getEnvAsSlice gets an environment variable as comma-separated slice or returns a default value
+func getEnvAsSlice(key string, defaultValue []string) []string {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
+		result := []string{}
+		for i := 0; i < len(value); {
+			start := i
+			for i < len(value) && value[i] != ',' {
+				i++
+			}
+			item := value[start:i]
+			// Trim spaces
+			for len(item) > 0 && (item[0] == ' ' || item[0] == '\t') {
+				item = item[1:]
+			}
+			for len(item) > 0 && (item[len(item)-1] == ' ' || item[len(item)-1] == '\t') {
+				item = item[:len(item)-1]
+			}
+			if len(item) > 0 {
+				result = append(result, item)
+			}
+			if i < len(value) {
+				i++ // skip comma
+			}
+		}
+		if len(result) > 0 {
+			return result
 		}
 	}
 	return defaultValue

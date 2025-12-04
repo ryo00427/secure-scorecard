@@ -5,7 +5,10 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/secure-scorecard/backend/internal/auth"
+	apperrors "github.com/secure-scorecard/backend/internal/errors"
 	"github.com/secure-scorecard/backend/internal/model"
+	"github.com/secure-scorecard/backend/internal/validator"
 )
 
 // CreateGardenRequest represents the request body for creating a garden
@@ -27,14 +30,14 @@ type UpdateGardenRequest struct {
 // GetGardens returns all gardens for the current user
 func (h *Handler) GetGardens(c echo.Context) error {
 	ctx := c.Request().Context()
-	// TODO: Get user ID from JWT token
-	userID := uint(1) // Placeholder
+	userID := auth.GetUserIDFromContext(c)
+	if userID == 0 {
+		return apperrors.NewAuthenticationError("Not authenticated")
+	}
 
 	gardens, err := h.service.GetUserGardens(ctx, userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to fetch gardens",
-		})
+		return apperrors.NewInternalError("Failed to fetch gardens")
 	}
 
 	return c.JSON(http.StatusOK, gardens)
@@ -45,16 +48,12 @@ func (h *Handler) GetGarden(c echo.Context) error {
 	ctx := c.Request().Context()
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid garden ID",
-		})
+		return apperrors.NewBadRequestError("Invalid garden ID")
 	}
 
 	garden, err := h.service.GetGardenByID(ctx, uint(id))
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]string{
-			"error": "Garden not found",
-		})
+		return apperrors.NewNotFoundError("Garden")
 	}
 
 	return c.JSON(http.StatusOK, garden)
@@ -63,21 +62,19 @@ func (h *Handler) GetGarden(c echo.Context) error {
 // CreateGarden creates a new garden
 func (h *Handler) CreateGarden(c echo.Context) error {
 	ctx := c.Request().Context()
-	var req CreateGardenRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request body",
-		})
+	userID := auth.GetUserIDFromContext(c)
+	if userID == 0 {
+		return apperrors.NewAuthenticationError("Not authenticated")
 	}
 
-	// TODO: Get user ID from JWT token
-	userID := uint(1) // Placeholder
+	var req CreateGardenRequest
+	if err := validator.BindAndValidate(c, &req); err != nil {
+		return err
+	}
 
 	garden, err := h.service.CreateGarden(ctx, userID, req.Name, req.Description, req.Location, req.SizeM2)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to create garden",
-		})
+		return apperrors.NewInternalError("Failed to create garden")
 	}
 
 	return c.JSON(http.StatusCreated, garden)
@@ -88,23 +85,17 @@ func (h *Handler) UpdateGarden(c echo.Context) error {
 	ctx := c.Request().Context()
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid garden ID",
-		})
+		return apperrors.NewBadRequestError("Invalid garden ID")
 	}
 
 	var req UpdateGardenRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request body",
-		})
+	if err := validator.BindAndValidate(c, &req); err != nil {
+		return err
 	}
 
 	garden, err := h.service.GetGardenByID(ctx, uint(id))
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]string{
-			"error": "Garden not found",
-		})
+		return apperrors.NewNotFoundError("Garden")
 	}
 
 	// Update fields
@@ -122,9 +113,7 @@ func (h *Handler) UpdateGarden(c echo.Context) error {
 	}
 
 	if err := h.service.UpdateGarden(ctx, garden); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to update garden",
-		})
+		return apperrors.NewInternalError("Failed to update garden")
 	}
 
 	return c.JSON(http.StatusOK, garden)
@@ -135,15 +124,11 @@ func (h *Handler) DeleteGarden(c echo.Context) error {
 	ctx := c.Request().Context()
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid garden ID",
-		})
+		return apperrors.NewBadRequestError("Invalid garden ID")
 	}
 
 	if err := h.service.DeleteGarden(ctx, uint(id)); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to delete garden",
-		})
+		return apperrors.NewInternalError("Failed to delete garden")
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -154,16 +139,12 @@ func (h *Handler) GetGardenPlants(c echo.Context) error {
 	ctx := c.Request().Context()
 	gardenID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid garden ID",
-		})
+		return apperrors.NewBadRequestError("Invalid garden ID")
 	}
 
 	plants, err := h.service.GetGardenPlants(ctx, uint(gardenID))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to fetch plants",
-		})
+		return apperrors.NewInternalError("Failed to fetch plants")
 	}
 
 	return c.JSON(http.StatusOK, plants)
@@ -174,24 +155,18 @@ func (h *Handler) CreatePlant(c echo.Context) error {
 	ctx := c.Request().Context()
 	gardenID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid garden ID",
-		})
+		return apperrors.NewBadRequestError("Invalid garden ID")
 	}
 
 	var plant model.Plant
 	if err := c.Bind(&plant); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request body",
-		})
+		return apperrors.NewBadRequestError("Invalid request body")
 	}
 
 	plant.GardenID = uint(gardenID)
 
 	if err := h.service.CreatePlant(ctx, &plant); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to create plant",
-		})
+		return apperrors.NewInternalError("Failed to create plant")
 	}
 
 	return c.JSON(http.StatusCreated, plant)
