@@ -1,5 +1,30 @@
 # CLAUDE.md - プロジェクト固有の指示
 
+## 重要: 公式ドキュメントを必ず参照する
+
+**LLM の学習データは古い可能性がある。** 設定やAPI仕様は常に公式ドキュメントで最新情報を確認すること。
+
+### 必ず確認すべき公式ドキュメント
+
+| 技術 | URL |
+|------|-----|
+| Turborepo | https://turbo.build/repo/docs |
+| pnpm | https://pnpm.io/ja/ |
+| Expo | https://docs.expo.dev/ |
+| React Native | https://reactnative.dev/docs/getting-started |
+| Echo (Go) | https://echo.labstack.com/docs |
+| Terraform AWS | https://registry.terraform.io/providers/hashicorp/aws/latest/docs |
+
+### Context7 MCP ツールの活用
+
+`mcp__context7__resolve-library-id` と `mcp__context7__get-library-docs` を使って最新ドキュメントを取得できる。
+
+```
+例: Turborepo の最新ドキュメントを取得
+1. resolve-library-id で "turborepo" を検索
+2. get-library-docs で該当トピックのドキュメントを取得
+```
+
 ## プロジェクト概要
 
 家庭菜園管理アプリ - Turborepo モノレポ構成
