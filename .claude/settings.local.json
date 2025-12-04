@@ -30,7 +30,9 @@
       "Bash(pnpm lint:*)",
       "Bash(pnpm type-check:*)",
       "Bash(findstr:*)",
-      "Bash(cmd /c \"del /f /q \\?\\c:\\Users\\sugi2\\OneDrive\\プログラミング\\自分のリポジトリ\\secure-scorecard\\nul\")"
+      "Bash(cmd /c \"del /f /q \\?\\c:\\Users\\sugi2\\OneDrive\\プログラミング\\自分のリポジトリ\\secure-scorecard\\nul\")",
+      "Bash(go build:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

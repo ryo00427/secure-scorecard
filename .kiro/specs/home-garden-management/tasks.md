@@ -91,7 +91,7 @@
 
 ## 4. バックエンド - Go Echo基盤
 
-- [ ] 4.1 (P) Goプロジェクト構造とEcho初期化
+- [x] 4.1 (P) Goプロジェクト構造とEcho初期化
   - apps/backendディレクトリにGoモジュール初期化
   - Echo v4、GORM v2、echo-jwt v4依存関係追加
   - Clean Architectureベースのディレクトリ構造構築（handler, service, repository, model）
