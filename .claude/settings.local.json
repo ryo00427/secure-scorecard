@@ -32,7 +32,9 @@
       "Bash(findstr:*)",
       "Bash(cmd /c \"del /f /q \\?\\c:\\Users\\sugi2\\OneDrive\\プログラミング\\自分のリポジトリ\\secure-scorecard\\nul\")",
       "Bash(go build:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(git pull:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(backend): add Repository interfaces and transaction management\n\n- Define Repository interfaces for User, Garden, Plant, CareLog\n- Implement transaction management with context propagation\n- Add database connection pooling and health check\n- Refactor service layer to use new repository interfaces\n- Update handlers to pass context for proper request handling\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
