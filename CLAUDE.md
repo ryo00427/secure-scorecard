@@ -230,6 +230,70 @@ shamefully-hoist=true
 node-linker=hoisted
 ```
 
+### 8. N+1問題を防ぐ（データベース操作）
+
+**失敗例**: DeleteGarden メソッドでループ内で個別削除を実行（1 + N + 1 クエリ）
+
+```go
+// 🔴 悪い例: N+1問題
+plants, _ := repo.GetByGardenID(ctx, gardenID)  // 1回
+for _, plant := range plants {
+    repo.Delete(ctx, plant.ID)  // N回（plant の数だけクエリ）
+}
+repo.DeleteGarden(ctx, gardenID)  // 1回
+// 合計: 1 + N + 1 クエリ
+```
+
+**原因**:
+- 単一削除メソッドをループで再利用した（実装が簡単だった）
+- パフォーマンスへの配慮不足（「動けばいい」で実装）
+- 少量データでは問題が顕在化しない（3-5個なら気づかない）
+- トランザクション内なのでエラーが出ない
+
+**対策**: バッチ操作を優先する
+
+```go
+// ✅ 良い例: バッチ削除
+repo.DeleteByGardenID(ctx, gardenID)  // 1回（WHERE条件で一括削除）
+repo.DeleteGarden(ctx, gardenID)      // 1回
+// 合計: 2 クエリ
+```
+
+**N+1問題チェックリスト**:
+```
+実装時:
+□ ループ内でDB操作をしていないか？
+  - repository メソッド呼び出し
+  - SELECT/UPDATE/DELETE クエリ
+□ 取得したリストを1件ずつ処理していないか？
+□ バッチ操作が可能か？
+  - WHERE IN (ids...)
+  - WHERE column = value （複数行に適用）
+  - GORM の Create/Update/Delete with slice
+
+コードレビュー時:
+□ for/range ループ内に repository 呼び出しがないか
+□ トランザクション内のクエリ数を数える
+□ 「N件のデータがあったら何クエリ？」を想像する
+```
+
+**GORM のバッチ操作パターン**:
+```go
+// 複数IDで削除
+db.Delete(&Model{}, []uint{1, 2, 3, 4, 5})
+
+// WHERE条件で一括削除
+db.Where("parent_id = ?", parentID).Delete(&Model{})
+
+// 複数件を一括作成
+db.Create(&[]Model{...})
+
+// 複数件を一括更新
+db.Model(&Model{}).Where("status = ?", "old").Update("status", "new")
+```
+
+**重要**: ループでDB操作を見たら N+1 問題を疑う
+
 ## モノレポ構成
 
 ```
