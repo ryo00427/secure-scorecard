@@ -26,10 +26,11 @@ type UpdateGardenRequest struct {
 
 // GetGardens returns all gardens for the current user
 func (h *Handler) GetGardens(c echo.Context) error {
+	ctx := c.Request().Context()
 	// TODO: Get user ID from JWT token
 	userID := uint(1) // Placeholder
 
-	gardens, err := h.service.GetUserGardens(userID)
+	gardens, err := h.service.GetUserGardens(ctx, userID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to fetch gardens",
@@ -41,6 +42,7 @@ func (h *Handler) GetGardens(c echo.Context) error {
 
 // GetGarden returns a specific garden
 func (h *Handler) GetGarden(c echo.Context) error {
+	ctx := c.Request().Context()
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -48,7 +50,7 @@ func (h *Handler) GetGarden(c echo.Context) error {
 		})
 	}
 
-	garden, err := h.service.GetGardenByID(uint(id))
+	garden, err := h.service.GetGardenByID(ctx, uint(id))
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{
 			"error": "Garden not found",
@@ -60,6 +62,7 @@ func (h *Handler) GetGarden(c echo.Context) error {
 
 // CreateGarden creates a new garden
 func (h *Handler) CreateGarden(c echo.Context) error {
+	ctx := c.Request().Context()
 	var req CreateGardenRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -70,7 +73,7 @@ func (h *Handler) CreateGarden(c echo.Context) error {
 	// TODO: Get user ID from JWT token
 	userID := uint(1) // Placeholder
 
-	garden, err := h.service.CreateGarden(userID, req.Name, req.Description, req.Location, req.SizeM2)
+	garden, err := h.service.CreateGarden(ctx, userID, req.Name, req.Description, req.Location, req.SizeM2)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to create garden",
@@ -82,6 +85,7 @@ func (h *Handler) CreateGarden(c echo.Context) error {
 
 // UpdateGarden updates an existing garden
 func (h *Handler) UpdateGarden(c echo.Context) error {
+	ctx := c.Request().Context()
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -96,7 +100,7 @@ func (h *Handler) UpdateGarden(c echo.Context) error {
 		})
 	}
 
-	garden, err := h.service.GetGardenByID(uint(id))
+	garden, err := h.service.GetGardenByID(ctx, uint(id))
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{
 			"error": "Garden not found",
@@ -117,7 +121,7 @@ func (h *Handler) UpdateGarden(c echo.Context) error {
 		garden.SizeM2 = req.SizeM2
 	}
 
-	if err := h.service.UpdateGarden(garden); err != nil {
+	if err := h.service.UpdateGarden(ctx, garden); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to update garden",
 		})
@@ -128,6 +132,7 @@ func (h *Handler) UpdateGarden(c echo.Context) error {
 
 // DeleteGarden deletes a garden
 func (h *Handler) DeleteGarden(c echo.Context) error {
+	ctx := c.Request().Context()
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -135,7 +140,7 @@ func (h *Handler) DeleteGarden(c echo.Context) error {
 		})
 	}
 
-	if err := h.service.DeleteGarden(uint(id)); err != nil {
+	if err := h.service.DeleteGarden(ctx, uint(id)); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to delete garden",
 		})
@@ -146,6 +151,7 @@ func (h *Handler) DeleteGarden(c echo.Context) error {
 
 // GetGardenPlants returns all plants in a garden
 func (h *Handler) GetGardenPlants(c echo.Context) error {
+	ctx := c.Request().Context()
 	gardenID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -153,7 +159,7 @@ func (h *Handler) GetGardenPlants(c echo.Context) error {
 		})
 	}
 
-	plants, err := h.service.GetGardenPlants(uint(gardenID))
+	plants, err := h.service.GetGardenPlants(ctx, uint(gardenID))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to fetch plants",
@@ -165,6 +171,7 @@ func (h *Handler) GetGardenPlants(c echo.Context) error {
 
 // CreatePlant creates a new plant in a garden
 func (h *Handler) CreatePlant(c echo.Context) error {
+	ctx := c.Request().Context()
 	gardenID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -181,7 +188,7 @@ func (h *Handler) CreatePlant(c echo.Context) error {
 
 	plant.GardenID = uint(gardenID)
 
-	if err := h.service.CreatePlant(&plant); err != nil {
+	if err := h.service.CreatePlant(ctx, &plant); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to create plant",
 		})

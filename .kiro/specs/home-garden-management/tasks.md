@@ -99,7 +99,7 @@
   - 環境変数読み込み設定（AWS Secrets Manager統合）
   - _Requirements: 7.1, 7.7_
 
-- [ ] 4.2 (P) データベース接続とRepository基盤
+- [x] 4.2 (P) データベース接続とRepository基盤
   - GORM PostgreSQL接続設定
   - Repository パターン基盤実装（interface定義）
   - トランザクション管理機構実装
