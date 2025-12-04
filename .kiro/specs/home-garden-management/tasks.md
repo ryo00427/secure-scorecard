@@ -107,7 +107,7 @@
   - マイグレーション管理設定
   - _Requirements: 6.3_
 
-- [ ] 4.3 (P) JWT認証ミドルウェア設定
+- [x] 4.3 (P) JWT認証ミドルウェア設定
   - echo-jwt v4ミドルウェア統合
   - JWT生成・検証ロジック実装（HS256）
   - HttpOnly Cookie設定（SameSite=Strict）

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/secure-scorecard/backend/internal/auth"
 	"github.com/secure-scorecard/backend/internal/config"
 	"github.com/secure-scorecard/backend/internal/database"
 	"github.com/secure-scorecard/backend/internal/handler"
@@ -52,10 +53,13 @@ func main() {
 			log.Printf("Warning: Index creation failed: %v", err)
 		}
 
+		// Initialize JWT manager
+		jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.ExpireHour)
+
 		// Initialize layers with new repository manager
 		repos := repository.NewRepositoryManager(db.DB)
 		svc := service.NewService(repos)
-		h := handler.NewHandler(svc)
+		h := handler.NewHandler(svc, jwtManager)
 
 		// Register routes
 		h.RegisterRoutes(e)

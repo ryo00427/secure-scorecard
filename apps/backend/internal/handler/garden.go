@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/secure-scorecard/backend/internal/auth"
 	"github.com/secure-scorecard/backend/internal/model"
 )
 
@@ -27,8 +28,12 @@ type UpdateGardenRequest struct {
 // GetGardens returns all gardens for the current user
 func (h *Handler) GetGardens(c echo.Context) error {
 	ctx := c.Request().Context()
-	// TODO: Get user ID from JWT token
-	userID := uint(1) // Placeholder
+	userID := auth.GetUserIDFromContext(c)
+	if userID == 0 {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": "Not authenticated",
+		})
+	}
 
 	gardens, err := h.service.GetUserGardens(ctx, userID)
 	if err != nil {
@@ -63,15 +68,19 @@ func (h *Handler) GetGarden(c echo.Context) error {
 // CreateGarden creates a new garden
 func (h *Handler) CreateGarden(c echo.Context) error {
 	ctx := c.Request().Context()
+	userID := auth.GetUserIDFromContext(c)
+	if userID == 0 {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": "Not authenticated",
+		})
+	}
+
 	var req CreateGardenRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Invalid request body",
 		})
 	}
-
-	// TODO: Get user ID from JWT token
-	userID := uint(1) // Placeholder
 
 	garden, err := h.service.CreateGarden(ctx, userID, req.Name, req.Description, req.Location, req.SizeM2)
 	if err != nil {
