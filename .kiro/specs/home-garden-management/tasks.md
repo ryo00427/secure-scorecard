@@ -4,13 +4,13 @@
 
 - [x] 1.1 (P) モノレポ初期化とTurborepo設定
   - pnpm workspaceでモノレポルート初期化
-  - Turborepo設定ファイル作成（turbo.json）
-  - packages/mobile、packages/backend、packages/sharedディレクトリ作成
-  - ルートpackage.jsonにワークスペース設定追加
-  - ビルドキャッシュ設定とパイプライン定義
+  - Turborepo設定ファイル作成（turbo.json、v2 tasks形式）
+  - apps/mobile、apps/backend、packages/shared、packages/typescript-configディレクトリ作成
+  - ルートpackage.jsonにワークスペース設定追加（apps/*, packages/*）
+  - ビルドキャッシュ設定とタスク定義
   - _Requirements: 7.1, 7.2, 7.3_
 
-- [ ] 1.2 (P) 共有TypeScript設定とリンター設定
+- [x] 1.2 (P) 共有TypeScript設定とリンター設定
   - packages/shared配下に共通型定義とユーティリティ配置
   - ESLint、Prettier設定をモノレポ全体で統一
   - TypeScript共通設定（tsconfig.json）作成
@@ -92,7 +92,7 @@
 ## 4. バックエンド - Go Echo基盤
 
 - [ ] 4.1 (P) Goプロジェクト構造とEcho初期化
-  - packages/backendディレクトリにGoモジュール初期化
+  - apps/backendディレクトリにGoモジュール初期化
   - Echo v4、GORM v2、echo-jwt v4依存関係追加
   - Clean Architectureベースのディレクトリ構造構築（handler, service, repository, model）
   - main.goとサーバー起動処理実装
@@ -368,7 +368,7 @@
 ## 12. フロントエンド - React Native Mobile実装
 
 - [ ] 12.1 (P) React Native プロジェクト初期化
-  - packages/frontend/mobileディレクトリにExpo初期化
+  - apps/mobileディレクトリにExpo初期化
   - Expo Managed Workflow設定
   - React Navigation設定
   - TypeScript設定
