@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command:*)",
+      "Bash(Test-Path \"c:\\Users\\sugi2\\OneDrive\\プログラミング\\自分のリポジトリ\\secure-scorecard\\.kiro\\specs\\home-garden-management\\tasks.md\")",
+      "Bash(done)",
+      "Bash(python:*)",
+      "Bash(del \"c:\\Users\\sugi2\\OneDrive\\プログラミング\\自分のリポジトリ\\secure-scorecard\\temp_fix_tasks.py\")",
+      "Bash(git checkout:*)",
+      "Bash(node tests/monorepo-structure.test.js:*)",
+      "Bash(node --version:*)",
+      "Bash(echo:*)",
+      "Bash(node:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(go mod tidy:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+
+<html class="" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>マイガーデン ダッシュボード</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+    </style>
+<script>tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#1A1A1A", "background-light": "#f7f7f7", "background-dark": "#191919"}, fontFamily: {display: "Manrope"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="flex flex-col gap-2 bg-background-light dark:bg-background-dark p-4 pb-2 sticky top-0 z-10">
+<div class="flex items-center h-12 justify-between">
+<div class="flex size-12 shrink-0 items-center justify-start">
+<span class="material-symbols-outlined text-gray-800 dark:text-gray-200" style="font-size: 28px;">menu</span>
+</div>
+<div class="flex w-12 items-center justify-end">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 w-12 bg-transparent text-gray-800 dark:text-gray-200 gap-2 text-base font-bold leading-normal tracking-[0.015em] min-w-0 p-0">
+<span class="material-symbols-outlined" style="font-size: 28px;">settings</span>
+</button>
+</div>
+</div>
+<p class="text-gray-900 dark:text-white tracking-tight text-[28px] font-bold leading-tight">マイガーデン</p>
+</div>
+<main class="flex flex-col flex-grow pb-28">
+<h3 class="text-gray-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-4">次の作業</h3>
+<div class="px-4">
+<div class="flex items-stretch justify-between gap-4 rounded-xl bg-green-900/50 dark:bg-[#193319] p-4 shadow-[0_4px_12px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
+<div class="flex flex-[2_2_0px] flex-col gap-4">
+<div class="flex flex-col gap-1">
+<p class="text-white text-base font-bold leading-tight">ミニトマトに水やり</p>
+<p class="text-gray-300 dark:text-[#92c992] text-sm font-normal leading-normal">土が乾いています。たっぷりと水をあげましょう。</p>
+</div>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 flex-row-reverse bg-[#234823] text-white pr-2 gap-2 text-sm font-medium leading-normal w-fit hover:bg-green-700 transition-colors">
+<span class="material-symbols-outlined text-white" style="font-size: 18px;">check_circle</span>
+<span class="truncate">完了</span>
+</button>
+</div>
+<div class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-lg flex-1" data-alt="A vibrant image of ripe mini tomatoes on the vine" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDCYNJ9V04B26IIRSKtWy7s9eIaE2T4tfS8nxnArvlIw7h3ELAt_RPrLdJ4mtVXdN1beIyKRHT-O2GSuwYShsbfLBWjwo8Hue6hSKkCRK0zVFC4Y2wh7wb2t_72zRPhpi0ZYhaYzuiHSfRcB-qGqJeOZZwvdiyDKZ1Kjhtjz-UkOr9_sGTAJtbEyWn_y_cBnaD-Cm7VkEOHO1ZN1CRIiCsoMzikB9IVW_VV_2hPcRriSWrmEAnn2UB0s7r3aVelAJYDE1Z8YMrbKQ");'></div>
+</div>
+</div>
+<h3 class="text-gray-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-8">栽培中の作物</h3>
+<div class="flex flex-col gap-3 px-4">
+<div class="flex gap-4 bg-white dark:bg-[#1A2D1A] p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] justify-between items-center">
+<div class="flex items-center gap-4 w-full">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-[64px] shrink-0" data-alt="A healthy mini tomato plant" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC8BdZBLtGYFt1cQS6L1xG2yDIT0e6kKmEwgMib71sZvANUltV9W9zrqo2tPvXotn5apD2uiM_lW2nQzjomnNensqvc8JfnGwUVVCYT3EWvKSHYdLidhoJEyC-qNUxnlDnaXUJk0c9v1Jt7QpvFAjuuM3OnrcBd4HSPPIk3s1ACDMf4yprlINV8LFJxvqalVNjTU_Bgvg4PfSYU9OM-i0XfG5WYqGUMnjgfZjY2eSdb0ry3jTNggSqwV9Wxf8eMtlJxd9oFxAVBLQ");'></div>
+<div class="flex flex-1 flex-col justify-center gap-1 w-full min-w-0">
+<div class="flex justify-between items-center">
+<p class="text-gray-900 dark:text-white text-base font-medium leading-normal">ミニトマト</p>
+<div class="shrink-0 flex items-center justify-center">
+<div class="size-3 rounded-full bg-amber-500"></div>
+</div>
+</div>
+<p class="text-gray-600 dark:text-[#92c992] text-sm font-normal leading-normal">種まきから25日</p>
+<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
+<div class="bg-primary h-1.5 rounded-full" style="width: 45%"></div>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-xs font-normal leading-normal mt-1">収穫まであと約2週間</p>
+</div>
+</div>
+</div>
+<div class="flex gap-4 bg-white dark:bg-[#1A2D1A] p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] justify-between items-center">
+<div class="flex items-center gap-4 w-full">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-[64px] shrink-0" data-alt="Fresh basil leaves" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA3LnmqbhKDIyUbjioEDINS28iDdZsdYvAONarQsSL08CGy8hnyQFyyhUbE_CtyU1ICMekFnuJyTEHOuLjSdNWm89SUQKvAmKb9KhVta8xoD095buUTImxuRsliLSl2vIw0jFmBVWfBPiNeBITVPwIcVbg64TPDdseQ8HXZPIsdAhVINxTtY_HeJrZh1ppyUs81hMytk60z3EihGJd5g7_upVX-TDsiqQW8qOkCrDjesJDZX8xiwus2hWCGnFs43qR3EPVFRaSi5A");'></div>
+<div class="flex flex-1 flex-col justify-center gap-1 w-full min-w-0">
+<div class="flex justify-between items-center">
+<p class="text-gray-900 dark:text-white text-base font-medium leading-normal">バジル</p>
+<div class="shrink-0 flex items-center justify-center">
+<div class="size-3 rounded-full bg-green-500"></div>
+</div>
+</div>
+<p class="text-gray-600 dark:text-[#92c992] text-sm font-normal leading-normal">種まきから40日</p>
+<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
+<div class="bg-primary h-1.5 rounded-full" style="width: 75%"></div>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-xs font-normal leading-normal mt-1">いつでも収穫できます</p>
+</div>
+</div>
+</div>
+<div class="flex gap-4 bg-white dark:bg-[#1A2D1A] p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] justify-between items-center">
+<div class="flex items-center gap-4 w-full">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-[64px] shrink-0" data-alt="A cucumber growing on the vine" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA0_FVVMd5nHg4GRrSy0-8vvfeI9wUXn3HZzCqRp4hGk4kH7wLxwDMl3TGTXLw23hcykNQ-0RxiKBGFrQdIJalIouuzpY7YD5wEjslJXLN69PkelcpZS7dDOWp4yqdKzzhLdi1geiEFTbV_BHy5c6BtKcFWfyuS_1fV9ZY17ncBNXYQR-XFfaPjKxROhYaVl4u0Ug5a0A1YvCsFOzlp1W2qgYiocwrEn68INtZ8oZAFGcL8rlrlpFGCemytGesndkbJNk-AzQsn2Q");'></div>
+<div class="flex flex-1 flex-col justify-center gap-1 w-full min-w-0">
+<div class="flex justify-between items-center">
+<p class="text-gray-900 dark:text-white text-base font-medium leading-normal">キュウリ</p>
+<div class="shrink-0 flex items-center justify-center">
+<div class="size-3 rounded-full bg-green-500"></div>
+</div>
+</div>
+<p class="text-gray-600 dark:text-[#92c992] text-sm font-normal leading-normal">種まきから15日</p>
+<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
+<div class="bg-primary h-1.5 rounded-full" style="width: 20%"></div>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-xs font-normal leading-normal mt-1">収穫まであと約5週間</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<div class="fixed bottom-0 left-0 right-0 h-24 bg-transparent backdrop-blur-lg">
+<div class="flex justify-around items-center h-full border-t border-gray-200/50 dark:border-gray-700/50 mx-4">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-size: 28px; font-variation-settings: 'FILL' 1;">yard</span>
+<span class="text-xs font-semibold">ダッシュボード</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined" style="font-size: 28px;">calendar_today</span>
+<span class="text-xs">カレンダー</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined" style="font-size: 28px;">menu_book</span>
+<span class="text-xs">植物ガイド</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined" style="font-size: 28px;">person</span>
+<span class="text-xs">プロフィール</span>
+</button>
+</div>
+</div>
+<button class="fixed bottom-20 right-4 w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-lg text-white dark:text-background-dark">
+<span class="material-symbols-outlined" style="font-size: 32px;">add</span>
+</button>
+</div>
+</body></html>

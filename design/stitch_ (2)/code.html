@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+
+<html class="" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>作業ログ</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13ec13",
+              "background-light": "#f6f8f6",
+              "background-dark": "#102210",
+            },
+            fontFamily: {
+              "display": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        font-size: 24px;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex min-h-screen w-full flex-col">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-white/10 bg-background-light/80 px-4 py-2 backdrop-blur-sm dark:bg-background-dark/80">
+<button class="flex items-center justify-center text-white/80 transition-colors hover:text-white">
+<span class="material-symbols-outlined">close</span>
+</button>
+<h1 class="text-lg font-bold text-white">作業ログ</h1>
+<button class="rounded-lg bg-primary px-4 py-1.5 text-sm font-bold text-background-dark transition-opacity hover:opacity-80">
+                保存
+            </button>
+</header>
+<!-- Main Content -->
+<main class="flex-1 space-y-4 px-4 py-6">
+<!-- Date & Plant Selection -->
+<section class="space-y-1 divide-y divide-white/10 overflow-hidden rounded-xl bg-black/10">
+<!-- Date Item -->
+<div class="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 bg-white/5 px-4 py-2 transition-colors hover:bg-white/10">
+<div class="flex items-center gap-4">
+<div class="flex size-10 items-center justify-center rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined">calendar_today</span>
+</div>
+<p class="text-base font-normal text-white">日付</p>
+</div>
+<div class="flex items-center gap-2">
+<p class="text-base font-normal text-white/80">2023年10月27日</p>
+<span class="material-symbols-outlined text-white/50">chevron_right</span>
+</div>
+</div>
+<!-- Plant Item -->
+<div class="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 bg-white/5 px-4 py-2 transition-colors hover:bg-white/10">
+<div class="flex items-center gap-4">
+<div class="flex size-10 items-center justify-center rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined">potted_plant</span>
+</div>
+<p class="text-base font-normal text-white">対象の植物</p>
+</div>
+<div class="flex items-center gap-2">
+<p class="truncate text-base font-normal text-white/80">トマト, きゅうり</p>
+<span class="material-symbols-outlined text-white/50">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- Task Type Section -->
+<section>
+<h3 class="px-2 pb-2 pt-4 text-lg font-bold leading-tight tracking-[-0.015em] text-white">作業の種類</h3>
+<div class="flex flex-wrap gap-3 p-2">
+<button class="flex h-10 items-center justify-center gap-x-2 rounded-lg bg-primary px-4 text-sm font-bold text-background-dark">水やり</button>
+<button class="flex h-10 items-center justify-center gap-x-2 rounded-lg bg-white/10 px-4 text-sm font-medium text-white/80 transition-colors hover:bg-white/20">肥料</button>
+<button class="flex h-10 items-center justify-center gap-x-2 rounded-lg bg-white/10 px-4 text-sm font-medium text-white/80 transition-colors hover:bg-white/20">害虫駆除</button>
+<button class="flex h-10 items-center justify-center gap-x-2 rounded-lg bg-white/10 px-4 text-sm font-medium text-white/80 transition-colors hover:bg-white/20">収穫</button>
+<button class="flex h-10 items-center justify-center gap-x-2 rounded-lg bg-white/10 px-4 text-sm font-medium text-white/80 transition-colors hover:bg-white/20">その他</button>
+</div>
+</section>
+<!-- Memo Section -->
+<section>
+<h3 class="px-2 pb-2 pt-4 text-lg font-bold leading-tight tracking-[-0.015em] text-white">メモ</h3>
+<div class="rounded-xl bg-white/5 p-1">
+<textarea class="min-h-[120px] w-full resize-none rounded-lg border-0 bg-transparent p-3 text-base text-white placeholder:text-white/50 focus:ring-0" placeholder="作業の詳細や気づいたこと..."></textarea>
+</div>
+</section>
+<!-- Photos Section -->
+<section>
+<h3 class="px-2 pb-2 pt-4 text-lg font-bold leading-tight tracking-[-0.015em] text-white">写真</h3>
+<div class="flex items-center gap-4 overflow-x-auto p-2">
+<div class="grid h-24 w-24 shrink-0 place-content-center rounded-xl border-2 border-dashed border-white/20 bg-white/5 text-white/50 transition-colors hover:border-white/40 hover:bg-white/10">
+<span class="material-symbols-outlined text-4xl">add_a_photo</span>
+</div>
+<div class="relative h-24 w-24 shrink-0">
+<img alt="A green tomato plant with several unripe tomatoes growing on the vine." class="h-full w-full rounded-xl object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbyPwHNpZsLRJSOJTvQONiQYo2b3x3xL-6782hCq6h7XXuzgvwCEoIheZOn4rtJQFQfemHVTimL1RgmIaUupwoBcAMUioZ_c6XMa8ymVfqo4g-UsH-0E4D4aoom5vK6xA47jxSU4VAF1lFQaYpCRgIJV45sLk-R2xJ5NPkIPdaiWfgY9m4tO028yX9DNTSIPWrZUV06hqyfWALG01-CJabnmi0BZaAtAiDXYAOPYCXf7I5bY7pbvNt1sJp8kHUL4ba0YEeCj51gA"/>
+<button class="absolute -right-1 -top-1 grid h-6 w-6 place-content-center rounded-full bg-black/70 text-white backdrop-blur-sm">
+<span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+</button>
+</div>
+<div class="relative h-24 w-24 shrink-0">
+<img alt="A close-up of a cucumber plant leaf with morning dew on it." class="h-full w-full rounded-xl object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7NkUu9_RX9dQLiOR_EoDFuTFoP51O23caI8CBQeg5At78aJrd25yNRuWGRTQ0J6Y8KAaGbkTt0Qo257PYVLKCXYO8K2OybBLlQm6hx8frEtLdDLFH6tK6hejkSL58h1pw5ZJ1ugkf7-Xe1VAXJn-UdzbgKdXtorrF1o1n8Bql2NYfgmqbGofYpo6jRNxf_sVWy1Kx15CtLByvpuTVFmuIisW3VeoX6lI6c35mmFi-6DAvoCAIzDJ9zaU4HbtEJcKOTAHpaaSE3A"/>
+<button class="absolute -right-1 -top-1 grid h-6 w-6 place-content-center rounded-full bg-black/70 text-white backdrop-blur-sm">
+<span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+
+<html class="" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>植物追加・編集</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13ec13",
+              "background-light": "#f6f8f6",
+              "background-dark": "#102210",
+            },
+            fontFamily: {
+              "display": ["Manrope", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display">
+<div class="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-white/10 bg-background-light/80 px-4 backdrop-blur-sm dark:bg-background-dark/80">
+<button class="flex h-10 w-10 items-center justify-center text-zinc-600 dark:text-zinc-300">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold text-zinc-900 dark:text-zinc-100">植物の追加</h1>
+<div class="w-10"></div>
+</header>
+<main class="flex-1 space-y-4 p-4 pb-28">
+<!-- Header Image -->
+<div class="group relative flex aspect-video min-h-48 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl bg-zinc-200 bg-cover bg-center bg-no-repeat dark:bg-zinc-800" data-alt="A healthy green plant with lush leaves, ready to be planted." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAPlHd3oSdvTys8LjpwyOwtTcOYf5or9Wfjorq_j_l7YBePqp2hD1C_4bNauMV_yWVBz12UrEw7FLoU4diefhNLOgM88lFZSFZs_pDpLD1To1Jn_glCtV9JHv5pjnNzZU6VEA3Qr7qVgTYS-G2imvZQZJ9r_QwRuYCnpcwoxxNncwzM-wBmvY3FhxQNEtVP3QXu1qA4_k8MirkmRwtX7y0ezy2VJBE833UOSCOWHRiT4ZmrPiuV4R9HOAwV9WpAHkB-9m06DTenhw');">
+<div class="absolute inset-0 bg-black/40 transition-opacity group-hover:opacity-100 md:opacity-0"></div>
+<div class="relative z-10 flex flex-col items-center text-white transition-transform group-hover:scale-105">
+<span class="material-symbols-outlined text-5xl">add_a_photo</span>
+<p class="mt-2 text-sm font-semibold">写真を変更</p>
+</div>
+</div>
+<!-- Form Fields -->
+<div class="space-y-6">
+<!-- Plant Name Field -->
+<label class="flex flex-col">
+<p class="pb-2 text-base font-medium text-zinc-800 dark:text-zinc-200">植物の名前 <span class="text-sm text-red-500">*</span></p>
+<input class="form-input h-14 w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-zinc-300 bg-white p-4 text-base font-normal leading-normal text-zinc-900 placeholder:text-zinc-400 focus:border-primary/50 focus:outline-0 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500" placeholder="例：ミニトマト" value=""/>
+</label>
+<!-- Planting Date Field -->
+<label class="flex flex-col">
+<p class="pb-2 text-base font-medium text-zinc-800 dark:text-zinc-200">植え付け日 <span class="text-sm text-red-500">*</span></p>
+<div class="relative flex w-full flex-1 items-stretch">
+<input class="form-input h-14 w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg rounded-r-none border border-zinc-300 bg-white p-4 pr-12 text-base font-normal leading-normal text-zinc-900 placeholder:text-zinc-400 focus:border-primary/50 focus:outline-0 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500" placeholder="日付を選択" value="2024年7月21日"/>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-500 dark:text-zinc-400">
+<span class="material-symbols-outlined">calendar_today</span>
+</div>
+</div>
+</label>
+<!-- Location Field (Optional) -->
+<label class="flex flex-col">
+<p class="pb-2 text-base font-medium text-zinc-800 dark:text-zinc-200">場所（オプション）</p>
+<input class="form-input h-14 w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-zinc-300 bg-white p-4 text-base font-normal leading-normal text-zinc-900 placeholder:text-zinc-400 focus:border-primary/50 focus:outline-0 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500" placeholder="例：南のベランダ" value=""/>
+</label>
+<!-- Memo Field (Optional) -->
+<label class="flex flex-col">
+<p class="pb-2 text-base font-medium text-zinc-800 dark:text-zinc-200">メモ（オプション）</p>
+<textarea class="form-textarea min-h-32 w-full min-w-0 flex-1 resize-y overflow-hidden rounded-lg border border-zinc-300 bg-white p-4 text-base font-normal leading-normal text-zinc-900 placeholder:text-zinc-400 focus:border-primary/50 focus:outline-0 focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500" placeholder="水やりの頻度、成長の記録など"></textarea>
+</label>
+</div>
+</main>
+<!-- Floating Action Button -->
+<footer class="fixed bottom-0 left-0 z-10 w-full bg-gradient-to-t from-background-light via-background-light to-transparent p-4 pb-6 dark:from-background-dark dark:via-background-dark">
+<button class="h-14 w-full rounded-full bg-primary text-base font-bold text-background-dark transition-transform active:scale-[0.98]">保存</button>
+</footer>
+</div>
+</body></html>
