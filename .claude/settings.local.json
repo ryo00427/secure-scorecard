@@ -14,7 +14,8 @@
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(git add:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(go mod tidy:*)"
     ],
     "deny": [],
     "ask": []
