@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+
+<html class="" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>カレンダー</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13ec13",
+              "background-light": "#f6f8f6",
+              "background-dark": "#102210",
+            },
+            fontFamily: {
+              "display": ["Manrope", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex h-screen w-full flex-col">
+<!-- Top App Bar -->
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between shrink-0">
+<button class="flex size-12 items-center justify-center text-slate-800 dark:text-white">
+<span class="material-symbols-outlined text-2xl">chevron_left</span>
+</button>
+<h1 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">2023年 8月</h1>
+<button class="flex size-12 items-center justify-center text-slate-800 dark:text-white">
+<span class="material-symbols-outlined text-2xl">chevron_right</span>
+</button>
+</div>
+<!-- Calendar Component -->
+<div class="flex flex-col flex-1 px-4 overflow-hidden">
+<div class="flex-1 flex flex-col min-w-72">
+<!-- Days of the week -->
+<div class="grid grid-cols-7">
+<p class="text-red-500 text-[13px] font-bold leading-normal flex h-12 w-full items-center justify-center pb-0.5">日</p>
+<p class="text-slate-600 dark:text-slate-400 text-[13px] font-bold leading-normal flex h-12 w-full items-center justify-center pb-0.5">月</p>
+<p class="text-slate-600 dark:text-slate-400 text-[13px] font-bold leading-normal flex h-12 w-full items-center justify-center pb-0.5">火</p>
+<p class="text-slate-600 dark:text-slate-400 text-[13px] font-bold leading-normal flex h-12 w-full items-center justify-center pb-0.5">水</p>
+<p class="text-slate-600 dark:text-slate-400 text-[13px] font-bold leading-normal flex h-12 w-full items-center justify-center pb-0.5">木</p>
+<p class="text-slate-600 dark:text-slate-400 text-[13px] font-bold leading-normal flex h-12 w-full items-center justify-center pb-0.5">金</p>
+<p class="text-blue-400 text-[13px] font-bold leading-normal flex h-12 w-full items-center justify-center pb-0.5">土</p>
+</div>
+<!-- Dates Grid -->
+<div class="grid grid-cols-7 flex-1">
+<!-- Empty cells for previous month -->
+<div class="h-full w-full"></div>
+<div class="h-full w-full"></div>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">1</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">
+                        2
+                        <div class="flex gap-1 mt-1">
+<div class="size-1.5 rounded-full bg-blue-400"></div>
+</div>
+</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">3</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">4</button>
+<button class="h-full w-full text-blue-400 dark:text-blue-300 text-sm font-medium flex flex-col items-center pt-2">
+                        5
+                        <div class="flex gap-1 mt-1">
+<div class="size-1.5 rounded-full bg-yellow-400"></div>
+</div>
+</button>
+<button class="h-full w-full text-red-500 dark:text-red-400 text-sm font-medium flex flex-col items-center pt-2">6</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">7</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">8</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">
+                        9
+                        <div class="flex gap-1 mt-1">
+<div class="size-1.5 rounded-full bg-blue-400"></div>
+</div>
+</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">10</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">11</button>
+<button class="h-full w-full text-blue-400 dark:text-blue-300 text-sm font-medium flex flex-col items-center pt-2">12</button>
+<button class="h-full w-full text-red-500 dark:text-red-400 text-sm font-medium flex flex-col items-center pt-2">
+                        13
+                         <div class="flex gap-1 mt-1">
+<div class="size-1.5 rounded-full bg-orange-400"></div>
+</div>
+</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">14</button>
+<button class="h-full w-full text-white dark:text-background-dark text-sm font-medium flex flex-col items-center pt-2">
+<div class="flex size-8 items-center justify-center rounded-full bg-primary -mt-1">15</div>
+<div class="flex gap-1 mt-1">
+<div class="size-1.5 rounded-full bg-blue-400"></div>
+<div class="size-1.5 rounded-full bg-yellow-400"></div>
+</div>
+</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">16</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">17</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">18</button>
+<button class="h-full w-full text-blue-400 dark:text-blue-300 text-sm font-medium flex flex-col items-center pt-2">19</button>
+<button class="h-full w-full text-red-500 dark:text-red-400 text-sm font-medium flex flex-col items-center pt-2">20</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">21</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">22</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">23</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">24</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">25</button>
+<button class="h-full w-full text-blue-400 dark:text-blue-300 text-sm font-medium flex flex-col items-center pt-2">26</button>
+<button class="h-full w-full text-red-500 dark:text-red-400 text-sm font-medium flex flex-col items-center pt-2">27</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">28</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">29</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">30</button>
+<button class="h-full w-full text-slate-500 dark:text-slate-300 text-sm font-medium flex flex-col items-center pt-2">31</button>
+</div>
+</div>
+</div>
+<!-- Floating Action Button -->
+<div class="absolute bottom-24 right-4">
+<button class="flex h-14 w-14 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary text-background-dark shadow-lg">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<!-- Bottom Navigation Bar -->
+<div class="flex gap-2 border-t border-slate-200 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 px-4 pb-3 pt-2 backdrop-blur-sm shrink-0">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined h-8 flex items-center justify-center text-2xl">home</span>
+<p class="text-xs font-medium leading-normal">ホーム</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined h-8 flex items-center justify-center text-2xl">eco</span>
+<p class="text-xs font-medium leading-normal">マイプラント</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill h-8 flex items-center justify-center text-2xl">calendar_month</span>
+<p class="text-xs font-medium leading-normal">カレンダー</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-500 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined h-8 flex items-center justify-center text-2xl">settings</span>
+<p class="text-xs font-medium leading-normal">設定</p>
+</a>
+</div>
+</div>
+</body></html>
