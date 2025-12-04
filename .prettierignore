@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+.turbo/
+
+# Go backend (uses gofmt)
+apps/backend/
+
+# Generated files
+*.min.js
+*.min.css
+pnpm-lock.yaml
+
+# IDE
+.idea/
+.vscode/

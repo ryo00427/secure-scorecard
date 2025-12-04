@@ -31,6 +31,54 @@
 
 ## 過去の失敗から学んだ教訓
 
+### 0. 環境構築は「動作確認」まで完了させる（最重要）
+
+**失敗例**: 設定ファイルを作成して「環境構築完了」としたが、実際に動かすとエラーが多発
+
+**原因**:
+- 設定ファイルを書いただけで終わり、実際の動作確認をしていない
+- 「ファイルがある」≠「動く」という認識の欠如
+- 部分的な確認（例: `pnpm install` 成功）で全体が動くと思い込む
+
+**対策**: 環境構築完了の定義を明確にする
+
+```
+環境構築完了チェックリスト:
+□ pnpm install が成功する
+□ pnpm build が全パッケージで成功する
+□ pnpm lint がエラーなく完了する
+□ pnpm type-check がエラーなく完了する
+□ pnpm test が実行できる（テストがあれば）
+□ 各アプリが起動できる:
+  □ apps/mobile: pnpm start で Expo が起動
+  □ apps/backend: go run が成功
+□ 共有パッケージがインポートできる
+```
+
+**重要**: 上記すべてが通るまで「環境構築完了」と言わない
+
+### 0.1 仕様ドキュメントと実装の整合性を保つ
+
+**失敗例**: tasks.md に `packages/backend` と書いたが、実際は `apps/backend` で実装
+
+**原因**:
+- 設計フェーズと実装フェーズで構成を変更した
+- 変更後にドキュメントを更新しなかった
+
+**対策**:
+- 構成を変更したら、関連ドキュメントも即座に更新
+- テストファイルの期待値も実装に合わせる
+- 定期的に `仕様 vs 実装` の差分をチェック
+
+```
+構成変更時のドキュメント更新チェックリスト:
+□ .kiro/specs/*/tasks.md
+□ .kiro/specs/*/design.md
+□ README.md
+□ CLAUDE.md
+□ tests/ 内のテスト期待値
+```
+
 ### 1. 構造変更時は全ファイルの整合性を確認する
 
 **失敗例**: `packages/` → `apps/` + `packages/` に変更した際、以下を更新し忘れた：
@@ -73,6 +121,74 @@
 - pnpm モノレポでは両方を同期させる必要がある
 - `pnpm-workspace.yaml` が優先されるが、npm/yarn 互換のため `package.json` も更新する
 
+### 5. 設定ファイルは「動く最小構成」から始める
+
+**失敗例**: Expo プロジェクトを手動で設定したら、エントリーポイント・依存関係・アセットが欠落
+
+**原因**:
+- 設定を「部分的に」追加していくと、依存関係の全体像を見失う
+- 公式テンプレートが持つ暗黙の前提条件を見落とす
+
+**対策**:
+```bash
+# 悪い例: 空のフォルダに手動で設定を追加
+mkdir my-app && cd my-app
+# package.json, app.json, babel.config.js を手動作成...
+
+# 良い例: 公式テンプレートから始める
+npx create-expo-app my-app --template blank-typescript
+# 必要に応じて設定を変更
+```
+
+### 7. pnpm モノレポでは Expo カスタムエントリーポイントが必要
+
+**失敗例**: `Unable to resolve "../../App" from "node_modules\expo\AppEntry.js"`
+
+**原因**:
+- `expo/AppEntry.js` は `../../App` を相対パスでインポートする
+- pnpm ホイスティングにより `expo` がルートの `node_modules` に配置される
+- 結果、`../../App` が正しいパスを指さない
+
+**対策**: カスタムエントリーポイントを作成
+```javascript
+// apps/mobile/index.js
+import { registerRootComponent } from 'expo';
+import App from './App';
+
+registerRootComponent(App);
+```
+
+```json
+// apps/mobile/package.json
+{
+  "main": "./index.js"
+}
+```
+
+**チェックリスト（Expo プロジェクト）**:
+```
+□ package.json: "main": "./index.js" (モノレポの場合)
+□ app.json: expo.name, expo.slug, expo.version
+□ assets/: icon.png, splash-icon.png, adaptive-icon.png, favicon.png
+□ babel.config.js: babel-preset-expo
+□ .npmrc: shamefully-hoist=true (pnpm の場合)
+□ 依存関係: expo, react, react-native, react-native-web, react-dom
+```
+
+### 6. pnpm + Expo は hoisting 設定が必要
+
+**失敗例**: `Cannot find module 'babel-preset-expo'` エラー
+
+**原因**:
+- pnpm はデフォルトで厳格な依存関係解決（phantom dependencies を防ぐ）
+- Expo/React Native は依存関係の hoisting を前提としている
+
+**対策**: `.npmrc` を作成
+```
+shamefully-hoist=true
+node-linker=hoisted
+```
+
 ## モノレポ構成
 
 ```
@@ -96,5 +212,6 @@ secure-scorecard/
 ## 開発時の注意点
 
 1. **Turborepo 2.x**: `pipeline` ではなく `tasks` を使用
-2. **Expo SDK 52**: `package.json` の `main` フィールドは不要
+2. **Expo managed workflow**: モノレポではカスタム `index.js` を作成し `"main": "./index.js"` を設定
 3. **pnpm workspaces**: `apps/*` と `packages/*` の両方を設定
+4. **pnpm + Expo**: `.npmrc` に `shamefully-hoist=true` が必要

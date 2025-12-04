@@ -34,5 +34,13 @@
   ],
   "globalEnv": [
     "NODE_ENV"
+  ],
+  "globalPassThroughEnv": [
+    "GOCACHE",
+    "GOPATH",
+    "GOROOT",
+    "LOCALAPPDATA",
+    "HOME",
+    "USERPROFILE"
   ]
 }
