@@ -5,7 +5,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/secure-scorecard/backend/internal/auth"
+	apperrors "github.com/secure-scorecard/backend/internal/errors"
 	"github.com/secure-scorecard/backend/internal/service"
+	"github.com/secure-scorecard/backend/internal/validator"
 )
 
 // AuthHandler handles authentication endpoints
@@ -41,32 +43,20 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	var req LoginRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request body",
-		})
-	}
-
-	if req.FirebaseUID == "" || req.Email == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "firebase_uid and email are required",
-		})
+	if err := validator.BindAndValidate(c, &req); err != nil {
+		return err
 	}
 
 	// Get or create user
 	user, err := h.service.GetOrCreateUser(ctx, req.FirebaseUID, req.Email, req.DisplayName, req.PhotoURL)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to process login",
-		})
+		return apperrors.NewInternalError("Failed to process login")
 	}
 
 	// Generate JWT token
 	token, err := h.jwtManager.GenerateToken(user.ID, user.FirebaseUID, user.Email)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to generate token",
-		})
+		return apperrors.NewInternalError("Failed to generate token")
 	}
 
 	// Set cookie
@@ -91,17 +81,13 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 func (h *AuthHandler) RefreshToken(c echo.Context) error {
 	claims := auth.GetUserFromContext(c)
 	if claims == nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Not authenticated",
-		})
+		return apperrors.NewAuthenticationError("Not authenticated")
 	}
 
 	// Generate new token
 	token, err := h.jwtManager.GenerateToken(claims.UserID, claims.FirebaseUID, claims.Email)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to refresh token",
-		})
+		return apperrors.NewInternalError("Failed to refresh token")
 	}
 
 	// Update cookie
@@ -118,16 +104,12 @@ func (h *AuthHandler) Me(c echo.Context) error {
 	ctx := c.Request().Context()
 	claims := auth.GetUserFromContext(c)
 	if claims == nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Not authenticated",
-		})
+		return apperrors.NewAuthenticationError("Not authenticated")
 	}
 
 	user, err := h.service.GetUserByID(ctx, claims.UserID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]string{
-			"error": "User not found",
-		})
+		return apperrors.NewNotFoundError("User")
 	}
 
 	return c.JSON(http.StatusOK, user)

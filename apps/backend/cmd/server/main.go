@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,10 +15,12 @@ import (
 	"github.com/secure-scorecard/backend/internal/auth"
 	"github.com/secure-scorecard/backend/internal/config"
 	"github.com/secure-scorecard/backend/internal/database"
+	apperrors "github.com/secure-scorecard/backend/internal/errors"
 	"github.com/secure-scorecard/backend/internal/handler"
 	"github.com/secure-scorecard/backend/internal/middleware"
 	"github.com/secure-scorecard/backend/internal/repository"
 	"github.com/secure-scorecard/backend/internal/service"
+	"github.com/secure-scorecard/backend/internal/validator"
 )
 
 func main() {
@@ -27,12 +30,21 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	// Setup structured logging
+	setupLogging(cfg)
+
 	// Initialize Echo
 	e := echo.New()
 	e.HideBanner = true
 
+	// Set custom error handler
+	e.HTTPErrorHandler = apperrors.ErrorHandler
+
+	// Set custom validator
+	e.Validator = validator.NewValidator()
+
 	// Setup middleware
-	middleware.SetupMiddleware(e)
+	middleware.SetupMiddleware(e, cfg)
 
 	// Initialize database
 	db, err := database.Connect(cfg, nil)
@@ -103,6 +115,29 @@ func main() {
 	}
 
 	log.Println("Server exited gracefully")
+}
+
+// setupLogging configures structured logging
+func setupLogging(cfg *config.Config) {
+	var level slog.Level
+	switch cfg.Server.Env {
+	case "production":
+		level = slog.LevelInfo
+	case "development":
+		level = slog.LevelDebug
+	default:
+		level = slog.LevelInfo
+	}
+
+	opts := &slog.HandlerOptions{
+		Level: level,
+	}
+
+	handler := slog.NewJSONHandler(os.Stdout, opts)
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	slog.Info("Logging initialized", "env", cfg.Server.Env, "level", level.String())
 }
 
 // setupStandaloneRoutes sets up routes for standalone mode (without database)

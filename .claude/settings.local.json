@@ -35,7 +35,8 @@
       "Bash(timeout:*)",
       "Bash(git pull:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat(backend): add Repository interfaces and transaction management\n\n- Define Repository interfaces for User, Garden, Plant, CareLog\n- Implement transaction management with context propagation\n- Add database connection pooling and health check\n- Refactor service layer to use new repository interfaces\n- Update handlers to pass context for proper request handling\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(go get:*)"
+      "Bash(go get:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
