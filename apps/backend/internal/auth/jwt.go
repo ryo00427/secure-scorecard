@@ -93,3 +93,8 @@ func (m *JWTManager) RefreshToken(tokenString string) (string, error) {
 func (m *JWTManager) GetExpireDuration() time.Duration {
 	return time.Duration(m.expireHour) * time.Hour
 }
+
+// GetExpireTime returns the token expiration time from now
+func (m *JWTManager) GetExpireTime() time.Time {
+	return time.Now().Add(m.GetExpireDuration())
+}

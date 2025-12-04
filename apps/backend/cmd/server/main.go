@@ -140,6 +140,30 @@ func setupLogging(cfg *config.Config) {
 	slog.Info("Logging initialized", "env", cfg.Server.Env, "level", level.String())
 }
 
+// startTokenCleanupJob starts a background job to clean up expired tokens
+func startTokenCleanupJob(svc *service.Service) {
+	ticker := time.NewTicker(24 * time.Hour) // Run daily
+	defer ticker.Stop()
+
+	// Run immediately on startup
+	cleanupExpiredTokens(svc)
+
+	// Then run daily
+	for range ticker.C {
+		cleanupExpiredTokens(svc)
+	}
+}
+
+// cleanupExpiredTokens removes expired tokens from the blacklist
+func cleanupExpiredTokens(svc *service.Service) {
+	ctx := context.Background()
+	if err := svc.CleanupExpiredTokens(ctx); err != nil {
+		slog.Error("Failed to cleanup expired tokens", "error", err)
+	} else {
+		slog.Info("Expired tokens cleaned up successfully")
+	}
+}
+
 // setupStandaloneRoutes sets up routes for standalone mode (without database)
 func setupStandaloneRoutes(e *echo.Echo) {
 	e.GET("/", func(c echo.Context) error {

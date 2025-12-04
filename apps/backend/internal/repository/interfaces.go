@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/secure-scorecard/backend/internal/model"
 )
@@ -42,12 +43,20 @@ type CareLogRepository interface {
 	Delete(ctx context.Context, id uint) error
 }
 
+// TokenBlacklistRepository defines the interface for token blacklist data access
+type TokenBlacklistRepository interface {
+	Add(ctx context.Context, tokenHash string, expiresAt time.Time) error
+	IsBlacklisted(ctx context.Context, tokenHash string) (bool, error)
+	DeleteExpired(ctx context.Context) error
+}
+
 // Repositories aggregates all repository interfaces
 type Repositories interface {
 	User() UserRepository
 	Garden() GardenRepository
 	Plant() PlantRepository
 	CareLog() CareLogRepository
+	TokenBlacklist() TokenBlacklistRepository
 
 	// Transaction support
 	WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error

@@ -25,21 +25,23 @@ func ContextWithTx(ctx context.Context, tx *gorm.DB) context.Context {
 
 // repositoryManager implements Repositories interface with transaction support
 type repositoryManager struct {
-	db      *gorm.DB
-	user    *userRepository
-	garden  *gardenRepository
-	plant   *plantRepository
-	careLog *careLogRepository
+	db             *gorm.DB
+	user           *userRepository
+	garden         *gardenRepository
+	plant          *plantRepository
+	careLog        *careLogRepository
+	tokenBlacklist *tokenBlacklistRepository
 }
 
 // NewRepositoryManager creates a new repository manager
 func NewRepositoryManager(db *gorm.DB) Repositories {
 	return &repositoryManager{
-		db:      db,
-		user:    &userRepository{db: db},
-		garden:  &gardenRepository{db: db},
-		plant:   &plantRepository{db: db},
-		careLog: &careLogRepository{db: db},
+		db:             db,
+		user:           &userRepository{db: db},
+		garden:         &gardenRepository{db: db},
+		plant:          &plantRepository{db: db},
+		careLog:        &careLogRepository{db: db},
+		tokenBlacklist: &tokenBlacklistRepository{db: db},
 	}
 }
 
@@ -61,6 +63,11 @@ func (m *repositoryManager) Plant() PlantRepository {
 // CareLog returns the care log repository
 func (m *repositoryManager) CareLog() CareLogRepository {
 	return m.careLog
+}
+
+// TokenBlacklist returns the token blacklist repository
+func (m *repositoryManager) TokenBlacklist() TokenBlacklistRepository {
+	return m.tokenBlacklist
 }
 
 // WithTransaction executes a function within a database transaction
@@ -96,8 +103,8 @@ func (m *repositoryManager) WithTransaction(ctx context.Context, fn func(ctx con
 	return nil
 }
 
-// getDB returns the appropriate database connection (transaction or main)
-func getDB(ctx context.Context, db *gorm.DB) *gorm.DB {
+// GetDB returns the appropriate database connection (transaction or main)
+func GetDB(ctx context.Context, db *gorm.DB) *gorm.DB {
 	if tx := TxFromContext(ctx); tx != nil {
 		return tx
 	}

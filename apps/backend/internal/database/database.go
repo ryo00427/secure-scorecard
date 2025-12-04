@@ -125,6 +125,7 @@ func (db *DB) AutoMigrate() error {
 		&model.Garden{},
 		&model.Plant{},
 		&model.CareLog{},
+		&model.TokenBlacklist{},
 	); err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}

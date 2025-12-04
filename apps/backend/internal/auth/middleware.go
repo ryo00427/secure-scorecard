@@ -7,6 +7,11 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// TokenBlacklistChecker defines the interface for checking token blacklist
+type TokenBlacklistChecker interface {
+	IsTokenBlacklisted(c echo.Context, tokenHash string) (bool, error)
+}
+
 const (
 	// AuthCookieName is the name of the authentication cookie
 	AuthCookieName = "auth_token"
@@ -15,12 +20,24 @@ const (
 )
 
 // AuthMiddleware creates an authentication middleware
-func AuthMiddleware(jwtManager *JWTManager) echo.MiddlewareFunc {
+func AuthMiddleware(jwtManager *JWTManager, blacklistChecker TokenBlacklistChecker) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			token := extractToken(c)
 			if token == "" {
 				return echo.NewHTTPError(http.StatusUnauthorized, "missing authentication token")
+			}
+
+			// Check if token is blacklisted (before validation)
+			if blacklistChecker != nil {
+				tokenHash := HashToken(token)
+				blacklisted, err := blacklistChecker.IsTokenBlacklisted(c, tokenHash)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "failed to check token status")
+				}
+				if blacklisted {
+					return echo.NewHTTPError(http.StatusUnauthorized, "token has been revoked")
+				}
 			}
 
 			claims, err := jwtManager.ValidateToken(token)

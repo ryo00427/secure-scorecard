@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/secure-scorecard/backend/internal/model"
 	"github.com/secure-scorecard/backend/internal/repository"
@@ -157,4 +158,16 @@ func (s *Service) CreateCareLog(ctx context.Context, careLog *model.CareLog) err
 // GetPlantCareLogs retrieves all care logs for a plant
 func (s *Service) GetPlantCareLogs(ctx context.Context, plantID uint) ([]model.CareLog, error) {
 	return s.repos.CareLog().GetByPlantID(ctx, plantID)
+}
+
+// --- Token Blacklist Service Methods ---
+
+// BlacklistToken adds a token to the blacklist
+func (s *Service) BlacklistToken(ctx context.Context, tokenHash string, expiresAt time.Time) error {
+	return s.repos.TokenBlacklist().Add(ctx, tokenHash, expiresAt)
+}
+
+// CleanupExpiredTokens removes expired tokens from the blacklist
+func (s *Service) CleanupExpiredTokens(ctx context.Context) error {
+	return s.repos.TokenBlacklist().DeleteExpired(ctx)
 }

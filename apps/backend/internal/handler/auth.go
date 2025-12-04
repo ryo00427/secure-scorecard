@@ -71,6 +71,29 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 // Logout handles user logout
 func (h *AuthHandler) Logout(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// Extract token from header or cookie
+	token := c.Request().Header.Get(echo.HeaderAuthorization)
+	if token != "" {
+		token = auth.ExtractTokenFromHeader(token)
+	} else {
+		cookie, err := c.Cookie(auth.AuthCookieName)
+		if err == nil {
+			token = cookie.Value
+		}
+	}
+
+	// Add token to blacklist if present
+	if token != "" {
+		tokenHash := auth.HashToken(token)
+		expiresAt := h.jwtManager.GetExpireTime()
+		if err := h.service.BlacklistToken(ctx, tokenHash, expiresAt); err != nil {
+			// Log error but don't fail the logout
+			apperrors.NewInternalError("Failed to blacklist token")
+		}
+	}
+
 	auth.ClearAuthCookie(c)
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Logged out successfully",
