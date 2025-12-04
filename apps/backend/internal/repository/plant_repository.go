@@ -44,3 +44,8 @@ func (r *plantRepository) Update(ctx context.Context, plant *model.Plant) error 
 func (r *plantRepository) Delete(ctx context.Context, id uint) error {
 	return GetDB(ctx, r.db).Delete(&model.Plant{}, id).Error
 }
+
+// DeleteByGardenID batch deletes all plants in a garden
+func (r *plantRepository) DeleteByGardenID(ctx context.Context, gardenID uint) error {
+	return GetDB(ctx, r.db).Where("garden_id = ?", gardenID).Delete(&model.Plant{}).Error
+}

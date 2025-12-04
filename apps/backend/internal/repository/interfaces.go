@@ -33,6 +33,7 @@ type PlantRepository interface {
 	GetByGardenID(ctx context.Context, gardenID uint) ([]model.Plant, error)
 	Update(ctx context.Context, plant *model.Plant) error
 	Delete(ctx context.Context, id uint) error
+	DeleteByGardenID(ctx context.Context, gardenID uint) error
 }
 
 // CareLogRepository defines the interface for care log data access

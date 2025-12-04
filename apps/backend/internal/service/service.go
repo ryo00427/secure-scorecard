@@ -103,17 +103,9 @@ func (s *Service) UpdateGarden(ctx context.Context, garden *model.Garden) error 
 // DeleteGarden soft deletes a garden and all its plants (with transaction)
 func (s *Service) DeleteGarden(ctx context.Context, id uint) error {
 	return s.repos.WithTransaction(ctx, func(txCtx context.Context) error {
-		// Get all plants in the garden
-		plants, err := s.repos.Plant().GetByGardenID(txCtx, id)
-		if err != nil {
+		// Batch delete all plants in the garden (prevents N+1 query problem)
+		if err := s.repos.Plant().DeleteByGardenID(txCtx, id); err != nil {
 			return err
-		}
-
-		// Delete all plants
-		for _, plant := range plants {
-			if err := s.repos.Plant().Delete(txCtx, plant.ID); err != nil {
-				return err
-			}
 		}
 
 		// Delete the garden
