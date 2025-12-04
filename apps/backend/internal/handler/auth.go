@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -38,6 +39,19 @@ type LoginResponse struct {
 	User  interface{} `json:"user"`
 }
 
+// RegisterRequest represents the registration request body
+type RegisterRequest struct {
+	Email       string `json:"email" validate:"required,email"`
+	Password    string `json:"password" validate:"required,min=8"`
+	DisplayName string `json:"display_name"`
+}
+
+// RegisterResponse represents the registration response
+type RegisterResponse struct {
+	Token string      `json:"token"`
+	User  interface{} `json:"user"`
+}
+
 // Login handles user login/registration
 func (h *AuthHandler) Login(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -64,6 +78,47 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	auth.SetAuthCookie(c, token, maxAge)
 
 	return c.JSON(http.StatusOK, LoginResponse{
+		Token: token,
+		User:  user,
+	})
+}
+
+// Register handles user registration with email and password
+func (h *AuthHandler) Register(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	var req RegisterRequest
+	if err := validator.BindAndValidate(c, &req); err != nil {
+		return err
+	}
+
+	// Hash password
+	hashedPassword, err := auth.HashPassword(req.Password)
+	if err != nil {
+		return apperrors.NewInternalError("Failed to process registration")
+	}
+
+	// Register user
+	user, err := h.service.RegisterUser(ctx, req.Email, hashedPassword, req.DisplayName)
+	if err != nil {
+		// Check if email already exists
+		if errors.Is(err, service.ErrEmailAlreadyExists) {
+			return apperrors.NewConflictError("Email already registered")
+		}
+		return apperrors.NewInternalError("Failed to register user")
+	}
+
+	// Generate JWT token
+	token, err := h.jwtManager.GenerateToken(user.ID, user.FirebaseUID, user.Email)
+	if err != nil {
+		return apperrors.NewInternalError("Failed to generate token")
+	}
+
+	// Set cookie
+	maxAge := int(h.jwtManager.GetExpireDuration().Seconds())
+	auth.SetAuthCookie(c, token, maxAge)
+
+	return c.JSON(http.StatusCreated, RegisterResponse{
 		Token: token,
 		User:  user,
 	})

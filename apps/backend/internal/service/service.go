@@ -2,10 +2,16 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/secure-scorecard/backend/internal/model"
 	"github.com/secure-scorecard/backend/internal/repository"
+)
+
+var (
+	// ErrEmailAlreadyExists is returned when trying to register with an existing email
+	ErrEmailAlreadyExists = errors.New("email already exists")
 )
 
 // Service provides business logic
@@ -53,6 +59,36 @@ func (s *Service) GetOrCreateUser(ctx context.Context, firebaseUID, email, displ
 			DisplayName: displayName,
 			PhotoURL:    photoURL,
 			IsActive:    true,
+		}
+
+		if err := s.repos.User().Create(txCtx, newUser); err != nil {
+			return err
+		}
+
+		result = newUser
+		return nil
+	})
+
+	return result, err
+}
+
+// RegisterUser creates a new user with email and password (with transaction)
+func (s *Service) RegisterUser(ctx context.Context, email, hashedPassword, displayName string) (*model.User, error) {
+	var result *model.User
+
+	err := s.repos.WithTransaction(ctx, func(txCtx context.Context) error {
+		// Check if email already exists
+		existingUser, err := s.repos.User().GetByEmail(txCtx, email)
+		if err == nil && existingUser != nil {
+			return ErrEmailAlreadyExists
+		}
+
+		// Create new user
+		newUser := &model.User{
+			Email:        email,
+			PasswordHash: hashedPassword,
+			DisplayName:  displayName,
+			IsActive:     true,
 		}
 
 		if err := s.repos.User().Create(txCtx, newUser); err != nil {
