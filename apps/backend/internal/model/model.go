@@ -70,6 +70,16 @@ type TokenBlacklist struct {
 }
 
 // Task represents a to-do task for gardening activities
+// Task はタスク（やることリスト）を表すモデルです。
+// 繰り返しタスクをサポートし、完了時に次回タスクを自動生成できます。
+//
+// 繰り返し設定:
+//   - Recurrence: 繰り返し頻度（daily, weekly, monthly）
+//   - RecurrenceInterval: 間隔（例: 2なら2日/2週/2ヶ月ごと）
+//   - MaxOccurrences: 最大繰り返し回数（nilで無制限）
+//   - RecurrenceEndDate: 繰り返し終了日（nilで無期限）
+//   - OccurrenceCount: 現在の繰り返し回数
+//   - ParentTaskID: 元タスクのID（繰り返しで生成されたタスクの場合）
 type Task struct {
 	BaseModel
 	UserID      uint       `gorm:"index;not null" json:"user_id"`
@@ -80,8 +90,19 @@ type Task struct {
 	Priority    string     `gorm:"size:20;default:'medium'" json:"priority"` // low, medium, high
 	Status      string     `gorm:"size:20;default:'pending'" json:"status"`  // pending, completed, cancelled
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
-	User        User       `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Plant       *Plant     `gorm:"foreignKey:PlantID" json:"plant,omitempty"`
+
+	// 繰り返し設定フィールド
+	Recurrence         string     `gorm:"size:20" json:"recurrence,omitempty"`           // daily, weekly, monthly, or empty
+	RecurrenceInterval int        `gorm:"default:1" json:"recurrence_interval,omitempty"` // every N days/weeks/months
+	MaxOccurrences     *int       `json:"max_occurrences,omitempty"`                      // nil = unlimited
+	RecurrenceEndDate  *time.Time `json:"recurrence_end_date,omitempty"`                  // nil = no end date
+	OccurrenceCount    int        `gorm:"default:0" json:"occurrence_count"`              // current count
+	ParentTaskID       *uint      `gorm:"index" json:"parent_task_id,omitempty"`          // original task ID
+
+	// リレーション
+	User       User   `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Plant      *Plant `gorm:"foreignKey:PlantID" json:"plant,omitempty"`
+	ParentTask *Task  `gorm:"foreignKey:ParentTaskID" json:"parent_task,omitempty"`
 }
 
 // TableName overrides the table name for User

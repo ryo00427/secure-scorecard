@@ -242,7 +242,7 @@
 
 ## 8. バックエンド - TaskService実装
 
-- [ ] 8.1 (P) TaskService - タスクCRUD実装
+- [x] 8.1 (P) TaskService - タスクCRUD実装
   - `POST /api/tasks` タスク作成エンドポイント
   - `GET /api/tasks` タスク一覧取得エンドポイント（フィルター・ソート対応）
   - `GET /api/tasks/today` 今日のタスク取得エンドポイント
@@ -251,7 +251,7 @@
   - dueDate >= today バリデーション
   - _Requirements: 3.1, 3.2, 3.4_
 
-- [ ] 8.2 TaskService - タスク完了と繰り返し生成
+- [x] 8.2 TaskService - タスク完了と繰り返し生成
   - `PUT /api/tasks/:id/complete` タスク完了エンドポイント
   - タスクステータスを"Completed"に更新
   - 繰り返し設定（recurrence）がある場合、次回タスク自動生成
