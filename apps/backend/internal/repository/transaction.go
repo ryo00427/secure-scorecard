@@ -32,6 +32,9 @@ type repositoryManager struct {
 	careLog        *careLogRepository
 	tokenBlacklist *tokenBlacklistRepository
 	task           *taskRepository
+	crop           *cropRepository
+	growthRecord   *growthRecordRepository
+	harvest        *harvestRepository
 }
 
 // NewRepositoryManager creates a new repository manager
@@ -44,6 +47,9 @@ func NewRepositoryManager(db *gorm.DB) Repositories {
 		careLog:        &careLogRepository{db: db},
 		tokenBlacklist: &tokenBlacklistRepository{db: db},
 		task:           &taskRepository{db: db},
+		crop:           &cropRepository{db: db},
+		growthRecord:   &growthRecordRepository{db: db},
+		harvest:        &harvestRepository{db: db},
 	}
 }
 
@@ -75,6 +81,21 @@ func (m *repositoryManager) TokenBlacklist() TokenBlacklistRepository {
 // Task returns the task repository
 func (m *repositoryManager) Task() TaskRepository {
 	return m.task
+}
+
+// Crop returns the crop repository
+func (m *repositoryManager) Crop() CropRepository {
+	return m.crop
+}
+
+// GrowthRecord returns the growth record repository
+func (m *repositoryManager) GrowthRecord() GrowthRecordRepository {
+	return m.growthRecord
+}
+
+// Harvest returns the harvest repository
+func (m *repositoryManager) Harvest() HarvestRepository {
+	return m.harvest
 }
 
 // WithTransaction executes a function within a database transaction

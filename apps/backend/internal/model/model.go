@@ -134,3 +134,92 @@ func (TokenBlacklist) TableName() string {
 func (Task) TableName() string {
 	return "tasks"
 }
+
+// =============================================================================
+// Crop Domain Models - 作物管理モデル
+// =============================================================================
+
+// Crop は作物を表すモデルです。
+// 植え付けから収穫までのライフサイクルを管理します。
+//
+// ステータス:
+//   - planted: 植え付け済み
+//   - growing: 成長中
+//   - ready_to_harvest: 収穫可能
+//   - harvested: 収穫済み
+//   - failed: 失敗
+//
+// バリデーション:
+//   - PlantedDate <= ExpectedHarvestDate
+type Crop struct {
+	BaseModel
+	UserID              uint       `gorm:"index;not null" json:"user_id"`
+	PlotID              *uint      `gorm:"index" json:"plot_id,omitempty"` // 区画への配置（任意）
+	Name                string     `gorm:"size:100;not null" json:"name"`
+	Variety             string     `gorm:"size:100" json:"variety,omitempty"` // 品種
+	PlantedDate         time.Time  `gorm:"not null" json:"planted_date"`
+	ExpectedHarvestDate time.Time  `gorm:"not null" json:"expected_harvest_date"`
+	Status              string     `gorm:"size:20;default:'planted'" json:"status"` // planted, growing, ready_to_harvest, harvested, failed
+	Notes               string     `gorm:"size:1000" json:"notes,omitempty"`
+
+	// リレーション
+	User          User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	GrowthRecords []GrowthRecord `gorm:"foreignKey:CropID" json:"growth_records,omitempty"`
+	Harvests      []Harvest      `gorm:"foreignKey:CropID" json:"harvests,omitempty"`
+}
+
+// GrowthRecord は作物の成長記録を表すモデルです。
+// 定期的な成長観察の記録を保存します。
+//
+// 成長段階:
+//   - seedling: 苗
+//   - vegetative: 成長期
+//   - flowering: 開花期
+//   - fruiting: 結実期
+type GrowthRecord struct {
+	BaseModel
+	CropID      uint      `gorm:"index;not null" json:"crop_id"`
+	RecordDate  time.Time `gorm:"not null" json:"record_date"`
+	GrowthStage string    `gorm:"size:20;not null" json:"growth_stage"` // seedling, vegetative, flowering, fruiting
+	Notes       string    `gorm:"size:1000" json:"notes,omitempty"`
+	ImageURL    string    `gorm:"size:500" json:"image_url,omitempty"` // S3署名付きURL
+
+	// リレーション
+	Crop Crop `gorm:"foreignKey:CropID" json:"crop,omitempty"`
+}
+
+// Harvest は収穫記録を表すモデルです。
+// 収穫量と品質を記録します。
+//
+// 品質評価:
+//   - excellent: 優良
+//   - good: 良好
+//   - fair: 普通
+//   - poor: 不良
+type Harvest struct {
+	BaseModel
+	CropID       uint      `gorm:"index;not null" json:"crop_id"`
+	HarvestDate  time.Time `gorm:"not null" json:"harvest_date"`
+	Quantity     float64   `gorm:"not null" json:"quantity"`
+	QuantityUnit string    `gorm:"size:20;not null" json:"quantity_unit"` // kg, g, pieces
+	Quality      string    `gorm:"size:20" json:"quality,omitempty"`      // excellent, good, fair, poor
+	Notes        string    `gorm:"size:1000" json:"notes,omitempty"`
+
+	// リレーション
+	Crop Crop `gorm:"foreignKey:CropID" json:"crop,omitempty"`
+}
+
+// TableName overrides the table name for Crop
+func (Crop) TableName() string {
+	return "crops"
+}
+
+// TableName overrides the table name for GrowthRecord
+func (GrowthRecord) TableName() string {
+	return "growth_records"
+}
+
+// TableName overrides the table name for Harvest
+func (Harvest) TableName() string {
+	return "harvests"
+}

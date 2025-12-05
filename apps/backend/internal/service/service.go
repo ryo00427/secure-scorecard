@@ -481,3 +481,187 @@ func (s *Service) calculateNextDueDate(currentDueDate time.Time, recurrence stri
 func (s *Service) DeleteTask(ctx context.Context, id uint) error {
 	return s.repos.Task().Delete(ctx, id)
 }
+
+// =============================================================================
+// Crop Service Methods - 作物管理サービスメソッド
+// =============================================================================
+// 作物（Crop）の植え付けから収穫までのライフサイクルを管理します。
+// 成長記録（GrowthRecord）と収穫記録（Harvest）も含みます。
+
+// CreateCrop は新しい作物を登録します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - crop: 作成する作物（UserID, Name, PlantedDate, ExpectedHarvestDateは必須）
+//
+// 戻り値:
+//   - error: 作成に失敗した場合のエラー
+func (s *Service) CreateCrop(ctx context.Context, crop *model.Crop) error {
+	return s.repos.Crop().Create(ctx, crop)
+}
+
+// GetCropByID はIDで作物を取得します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - id: 作物ID
+//
+// 戻り値:
+//   - *model.Crop: 見つかった作物
+//   - error: 作物が見つからない場合は gorm.ErrRecordNotFound
+func (s *Service) GetCropByID(ctx context.Context, id uint) (*model.Crop, error) {
+	return s.repos.Crop().GetByID(ctx, id)
+}
+
+// GetUserCrops はユーザーの全作物を取得します。
+// 植え付け日（PlantedDate）の降順でソートされます。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//
+// 戻り値:
+//   - []model.Crop: 作物の一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetUserCrops(ctx context.Context, userID uint) ([]model.Crop, error) {
+	return s.repos.Crop().GetByUserID(ctx, userID)
+}
+
+// GetUserCropsByStatus はステータスでフィルタリングした作物を取得します。
+//
+// 有効なステータス:
+//   - "planted": 植え付け済み
+//   - "growing": 成長中
+//   - "ready_to_harvest": 収穫可能
+//   - "harvested": 収穫済み
+//   - "failed": 失敗
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//   - status: フィルタするステータス
+//
+// 戻り値:
+//   - []model.Crop: 該当する作物の一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetUserCropsByStatus(ctx context.Context, userID uint, status string) ([]model.Crop, error) {
+	return s.repos.Crop().GetByUserIDAndStatus(ctx, userID, status)
+}
+
+// UpdateCrop は作物を更新します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - crop: 更新する作物（IDは必須）
+//
+// 戻り値:
+//   - error: 更新に失敗した場合のエラー
+func (s *Service) UpdateCrop(ctx context.Context, crop *model.Crop) error {
+	return s.repos.Crop().Update(ctx, crop)
+}
+
+// DeleteCrop は作物と関連する成長記録・収穫記録を削除します（トランザクション使用）。
+// N+1問題を避けるため、バッチ削除を使用します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - id: 削除する作物のID
+//
+// 戻り値:
+//   - error: 削除に失敗した場合のエラー
+func (s *Service) DeleteCrop(ctx context.Context, id uint) error {
+	return s.repos.WithTransaction(ctx, func(txCtx context.Context) error {
+		// 関連する成長記録を一括削除
+		if err := s.repos.GrowthRecord().DeleteByCropID(txCtx, id); err != nil {
+			return err
+		}
+
+		// 関連する収穫記録を一括削除
+		if err := s.repos.Harvest().DeleteByCropID(txCtx, id); err != nil {
+			return err
+		}
+
+		// 作物を削除
+		return s.repos.Crop().Delete(txCtx, id)
+	})
+}
+
+// =============================================================================
+// GrowthRecord Service Methods - 成長記録サービスメソッド
+// =============================================================================
+
+// CreateGrowthRecord は新しい成長記録を作成します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - record: 作成する成長記録（CropID, RecordDate, GrowthStageは必須）
+//
+// 戻り値:
+//   - error: 作成に失敗した場合のエラー
+func (s *Service) CreateGrowthRecord(ctx context.Context, record *model.GrowthRecord) error {
+	return s.repos.GrowthRecord().Create(ctx, record)
+}
+
+// GetGrowthRecordByID はIDで成長記録を取得します。
+func (s *Service) GetGrowthRecordByID(ctx context.Context, id uint) (*model.GrowthRecord, error) {
+	return s.repos.GrowthRecord().GetByID(ctx, id)
+}
+
+// GetCropGrowthRecords は作物の全成長記録を取得します。
+// 記録日（RecordDate）の降順でソートされます。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - cropID: 作物ID
+//
+// 戻り値:
+//   - []model.GrowthRecord: 成長記録の一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetCropGrowthRecords(ctx context.Context, cropID uint) ([]model.GrowthRecord, error) {
+	return s.repos.GrowthRecord().GetByCropID(ctx, cropID)
+}
+
+// DeleteGrowthRecord は成長記録を削除します。
+func (s *Service) DeleteGrowthRecord(ctx context.Context, id uint) error {
+	return s.repos.GrowthRecord().Delete(ctx, id)
+}
+
+// =============================================================================
+// Harvest Service Methods - 収穫記録サービスメソッド
+// =============================================================================
+
+// CreateHarvest は新しい収穫記録を作成します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - harvest: 作成する収穫記録（CropID, HarvestDate, Quantity, QuantityUnitは必須）
+//
+// 戻り値:
+//   - error: 作成に失敗した場合のエラー
+func (s *Service) CreateHarvest(ctx context.Context, harvest *model.Harvest) error {
+	return s.repos.Harvest().Create(ctx, harvest)
+}
+
+// GetHarvestByID はIDで収穫記録を取得します。
+func (s *Service) GetHarvestByID(ctx context.Context, id uint) (*model.Harvest, error) {
+	return s.repos.Harvest().GetByID(ctx, id)
+}
+
+// GetCropHarvests は作物の全収穫記録を取得します。
+// 収穫日（HarvestDate）の降順でソートされます。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - cropID: 作物ID
+//
+// 戻り値:
+//   - []model.Harvest: 収穫記録の一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetCropHarvests(ctx context.Context, cropID uint) ([]model.Harvest, error) {
+	return s.repos.Harvest().GetByCropID(ctx, cropID)
+}
+
+// DeleteHarvest は収穫記録を削除します。
+func (s *Service) DeleteHarvest(ctx context.Context, id uint) error {
+	return s.repos.Harvest().Delete(ctx, id)
+}

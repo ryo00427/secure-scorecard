@@ -63,6 +63,37 @@ type TaskRepository interface {
 	Delete(ctx context.Context, id uint) error
 }
 
+// CropRepository defines the interface for crop data access
+// 作物の植え付けから収穫までのライフサイクルを管理します
+type CropRepository interface {
+	Create(ctx context.Context, crop *model.Crop) error
+	GetByID(ctx context.Context, id uint) (*model.Crop, error)
+	GetByUserID(ctx context.Context, userID uint) ([]model.Crop, error)
+	GetByUserIDAndStatus(ctx context.Context, userID uint, status string) ([]model.Crop, error)
+	Update(ctx context.Context, crop *model.Crop) error
+	Delete(ctx context.Context, id uint) error
+}
+
+// GrowthRecordRepository defines the interface for growth record data access
+// 作物の成長記録を管理します
+type GrowthRecordRepository interface {
+	Create(ctx context.Context, record *model.GrowthRecord) error
+	GetByID(ctx context.Context, id uint) (*model.GrowthRecord, error)
+	GetByCropID(ctx context.Context, cropID uint) ([]model.GrowthRecord, error)
+	Delete(ctx context.Context, id uint) error
+	DeleteByCropID(ctx context.Context, cropID uint) error
+}
+
+// HarvestRepository defines the interface for harvest data access
+// 収穫記録を管理します
+type HarvestRepository interface {
+	Create(ctx context.Context, harvest *model.Harvest) error
+	GetByID(ctx context.Context, id uint) (*model.Harvest, error)
+	GetByCropID(ctx context.Context, cropID uint) ([]model.Harvest, error)
+	Delete(ctx context.Context, id uint) error
+	DeleteByCropID(ctx context.Context, cropID uint) error
+}
+
 // Repositories aggregates all repository interfaces
 type Repositories interface {
 	User() UserRepository
@@ -71,6 +102,9 @@ type Repositories interface {
 	CareLog() CareLogRepository
 	TokenBlacklist() TokenBlacklistRepository
 	Task() TaskRepository
+	Crop() CropRepository
+	GrowthRecord() GrowthRecordRepository
+	Harvest() HarvestRepository
 
 	// Transaction support
 	WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error
