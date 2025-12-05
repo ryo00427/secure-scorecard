@@ -38,6 +38,10 @@
 .kiro\steering\structure.md
 .kiro\steering\tech.md
 
+# 実装の際にはコメント追加してください
+
+解説のコメントを入れるようにしてください
+
 ### 0. IDEの診断エラーは実際のビルドで確認する
 
 **問題**: ファイル編集後、IDEが「imported and not used」などのエラーを表示し続ける
