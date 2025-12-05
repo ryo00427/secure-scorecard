@@ -348,6 +348,7 @@ func (s *Service) UpdateTask(ctx context.Context, task *model.Task) error {
 
 // CompleteTask はタスクを完了としてマークします。
 // Status を "completed" に、CompletedAt を現在時刻に設定します。
+// 繰り返し設定がある場合、次回タスクを自動生成します。
 //
 // 引数:
 //   - ctx: リクエストコンテキスト
@@ -355,19 +356,117 @@ func (s *Service) UpdateTask(ctx context.Context, task *model.Task) error {
 //
 // 戻り値:
 //   - error: タスクが見つからない、または更新に失敗した場合のエラー
+//
+// 繰り返しタスクの自動生成条件:
+//   - Recurrence が設定されている（daily, weekly, monthly）
+//   - MaxOccurrences に達していない（nilの場合は無制限）
+//   - RecurrenceEndDate を過ぎていない（nilの場合は無期限）
 func (s *Service) CompleteTask(ctx context.Context, taskID uint) error {
-	// まずタスクを取得
-	task, err := s.repos.Task().GetByID(ctx, taskID)
-	if err != nil {
-		return err
+	return s.repos.WithTransaction(ctx, func(txCtx context.Context) error {
+		// まずタスクを取得
+		task, err := s.repos.Task().GetByID(txCtx, taskID)
+		if err != nil {
+			return err
+		}
+
+		// 完了状態に更新
+		now := time.Now()
+		task.Status = "completed"
+		task.CompletedAt = &now
+		task.OccurrenceCount++
+
+		if err := s.repos.Task().Update(txCtx, task); err != nil {
+			return err
+		}
+
+		// 繰り返しタスクの場合、次回タスクを生成
+		if task.Recurrence != "" {
+			return s.generateNextRecurringTask(txCtx, task)
+		}
+
+		return nil
+	})
+}
+
+// generateNextRecurringTask は繰り返しタスクの次回タスクを生成します。
+//
+// 生成条件:
+//   - MaxOccurrences が nil、またはまだ上限に達していない
+//   - RecurrenceEndDate が nil、または次回期限日がその日付以前
+//
+// 次回期限日の計算:
+//   - daily: DueDate + (RecurrenceInterval * 日)
+//   - weekly: DueDate + (RecurrenceInterval * 週)
+//   - monthly: DueDate + (RecurrenceInterval * 月)
+func (s *Service) generateNextRecurringTask(ctx context.Context, completedTask *model.Task) error {
+	// MaxOccurrences チェック
+	if completedTask.MaxOccurrences != nil && completedTask.OccurrenceCount >= *completedTask.MaxOccurrences {
+		// 最大回数に達したので生成しない
+		return nil
 	}
 
-	// 完了状態に更新
-	now := time.Now()
-	task.Status = "completed"
-	task.CompletedAt = &now
+	// 次回期限日を計算
+	nextDueDate := s.calculateNextDueDate(completedTask.DueDate, completedTask.Recurrence, completedTask.RecurrenceInterval)
 
-	return s.repos.Task().Update(ctx, task)
+	// RecurrenceEndDate チェック
+	if completedTask.RecurrenceEndDate != nil && nextDueDate.After(*completedTask.RecurrenceEndDate) {
+		// 終了日を過ぎたので生成しない
+		return nil
+	}
+
+	// 元タスクのIDを決定（既に子タスクの場合は元のParentTaskIDを使用）
+	var parentID uint
+	if completedTask.ParentTaskID != nil {
+		parentID = *completedTask.ParentTaskID
+	} else {
+		parentID = completedTask.ID
+	}
+
+	// 新しいタスクを作成
+	newTask := &model.Task{
+		UserID:             completedTask.UserID,
+		PlantID:            completedTask.PlantID,
+		Title:              completedTask.Title,
+		Description:        completedTask.Description,
+		DueDate:            nextDueDate,
+		Priority:           completedTask.Priority,
+		Status:             "pending",
+		Recurrence:         completedTask.Recurrence,
+		RecurrenceInterval: completedTask.RecurrenceInterval,
+		MaxOccurrences:     completedTask.MaxOccurrences,
+		RecurrenceEndDate:  completedTask.RecurrenceEndDate,
+		OccurrenceCount:    completedTask.OccurrenceCount,
+		ParentTaskID:       &parentID,
+	}
+
+	return s.repos.Task().Create(ctx, newTask)
+}
+
+// calculateNextDueDate は次回の期限日を計算します。
+//
+// 引数:
+//   - currentDueDate: 現在の期限日
+//   - recurrence: 繰り返し頻度（daily, weekly, monthly）
+//   - interval: 間隔
+//
+// 戻り値:
+//   - time.Time: 次回の期限日
+func (s *Service) calculateNextDueDate(currentDueDate time.Time, recurrence string, interval int) time.Time {
+	if interval <= 0 {
+		interval = 1
+	}
+
+	switch recurrence {
+	case "daily":
+		return currentDueDate.AddDate(0, 0, interval)
+	case "weekly":
+		return currentDueDate.AddDate(0, 0, interval*7)
+	case "monthly":
+		return currentDueDate.AddDate(0, interval, 0)
+	default:
+		// 不明な繰り返し頻度の場合は1日後
+		return currentDueDate.AddDate(0, 0, 1)
+	}
 }
 
 // DeleteTask はタスクを論理削除します。

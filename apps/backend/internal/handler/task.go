@@ -36,16 +36,31 @@ import (
 //   - DueDate: 期限日（必須、RFC3339形式）
 //   - Priority: 優先度（low/medium/high、デフォルト: medium）
 //   - PlantID: 関連する植物のID（任意）
+//
+// 繰り返し設定:
+//   - Recurrence: 繰り返し頻度（daily/weekly/monthly、任意）
+//   - RecurrenceInterval: 繰り返し間隔（デフォルト: 1）
+//   - MaxOccurrences: 最大繰り返し回数（任意）
+//   - RecurrenceEndDate: 繰り返し終了日（任意）
 type CreateTaskRequest struct {
 	Title       string    `json:"title" validate:"required,max=200"`
 	Description string    `json:"description" validate:"max=1000"`
 	DueDate     time.Time `json:"due_date" validate:"required"`
 	Priority    string    `json:"priority" validate:"omitempty,oneof=low medium high"`
 	PlantID     *uint     `json:"plant_id"`
+
+	// 繰り返し設定（任意）
+	Recurrence         string     `json:"recurrence" validate:"omitempty,oneof=daily weekly monthly"`
+	RecurrenceInterval int        `json:"recurrence_interval"`
+	MaxOccurrences     *int       `json:"max_occurrences"`
+	RecurrenceEndDate  *time.Time `json:"recurrence_end_date"`
 }
 
 // UpdateTaskRequest はタスク更新リクエストの構造体です。
 // すべてのフィールドは任意で、指定されたフィールドのみ更新されます。
+//
+// 注意: 繰り返し設定を更新すると、今後生成されるタスクにのみ影響します。
+// 既に生成済みのタスクには影響しません。
 type UpdateTaskRequest struct {
 	Title       string    `json:"title" validate:"max=200"`
 	Description string    `json:"description" validate:"max=1000"`
@@ -53,6 +68,12 @@ type UpdateTaskRequest struct {
 	Priority    string    `json:"priority" validate:"omitempty,oneof=low medium high"`
 	Status      string    `json:"status" validate:"omitempty,oneof=pending completed cancelled"`
 	PlantID     *uint     `json:"plant_id"`
+
+	// 繰り返し設定（任意）
+	Recurrence         *string    `json:"recurrence" validate:"omitempty,oneof=daily weekly monthly"`
+	RecurrenceInterval *int       `json:"recurrence_interval"`
+	MaxOccurrences     *int       `json:"max_occurrences"`
+	RecurrenceEndDate  *time.Time `json:"recurrence_end_date"`
 }
 
 // =============================================================================
@@ -159,15 +180,25 @@ func (h *Handler) CreateTask(c echo.Context) error {
 		priority = "medium"
 	}
 
+	// 繰り返し間隔のデフォルト値を設定
+	recurrenceInterval := req.RecurrenceInterval
+	if recurrenceInterval <= 0 {
+		recurrenceInterval = 1
+	}
+
 	// タスクモデルを作成
 	task := &model.Task{
-		UserID:      userID,
-		PlantID:     req.PlantID,
-		Title:       req.Title,
-		Description: req.Description,
-		DueDate:     req.DueDate,
-		Priority:    priority,
-		Status:      "pending", // 新規タスクは常に pending
+		UserID:             userID,
+		PlantID:            req.PlantID,
+		Title:              req.Title,
+		Description:        req.Description,
+		DueDate:            req.DueDate,
+		Priority:           priority,
+		Status:             "pending", // 新規タスクは常に pending
+		Recurrence:         req.Recurrence,
+		RecurrenceInterval: recurrenceInterval,
+		MaxOccurrences:     req.MaxOccurrences,
+		RecurrenceEndDate:  req.RecurrenceEndDate,
 	}
 
 	// DBに保存
@@ -234,6 +265,20 @@ func (h *Handler) UpdateTask(c echo.Context) error {
 	}
 	if req.PlantID != nil {
 		task.PlantID = req.PlantID
+	}
+
+	// 繰り返し設定の更新
+	if req.Recurrence != nil {
+		task.Recurrence = *req.Recurrence
+	}
+	if req.RecurrenceInterval != nil {
+		task.RecurrenceInterval = *req.RecurrenceInterval
+	}
+	if req.MaxOccurrences != nil {
+		task.MaxOccurrences = req.MaxOccurrences
+	}
+	if req.RecurrenceEndDate != nil {
+		task.RecurrenceEndDate = req.RecurrenceEndDate
 	}
 
 	// DBを更新
