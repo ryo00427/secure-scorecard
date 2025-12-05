@@ -1,7 +1,10 @@
 package service
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"sort"
@@ -1415,4 +1418,326 @@ func (s *Service) getPlotProductivityChart(ctx context.Context, userID uint, fil
 		Data:        result,
 		GeneratedAt: time.Now(),
 	}, nil
+}
+
+// =============================================================================
+// CSV Export Types - CSVエクスポート型定義
+// =============================================================================
+// データのCSVエクスポート機能を提供します。
+
+// ExportDataType はエクスポートするデータの種類を表します。
+type ExportDataType string
+
+const (
+	// ExportDataTypeCrops は作物データのエクスポート
+	ExportDataTypeCrops ExportDataType = "crops"
+	// ExportDataTypeHarvests は収穫記録のエクスポート
+	ExportDataTypeHarvests ExportDataType = "harvests"
+	// ExportDataTypeTasks はタスクデータのエクスポート
+	ExportDataTypeTasks ExportDataType = "tasks"
+	// ExportDataTypeAll は全データのエクスポート
+	ExportDataTypeAll ExportDataType = "all"
+)
+
+// CSVExportResult はCSVエクスポートの結果を表します。
+type CSVExportResult struct {
+	DataType    ExportDataType `json:"data_type"`
+	FileName    string         `json:"file_name"`
+	ContentType string         `json:"content_type"`
+	Data        []byte         `json:"-"` // JSONには含めない
+	RecordCount int            `json:"record_count"`
+	GeneratedAt time.Time      `json:"generated_at"`
+}
+
+// =============================================================================
+// CSV Export Service Methods - CSVエクスポートサービスメソッド
+// =============================================================================
+
+// ExportCSV は指定されたデータ種類のCSVを生成します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//   - dataType: エクスポートするデータ種類
+//
+// 戻り値:
+//   - *CSVExportResult: エクスポート結果（CSVデータを含む）
+//   - error: 生成に失敗した場合のエラー
+func (s *Service) ExportCSV(ctx context.Context, userID uint, dataType ExportDataType) (*CSVExportResult, error) {
+	switch dataType {
+	case ExportDataTypeCrops:
+		return s.exportCropsCSV(ctx, userID)
+	case ExportDataTypeHarvests:
+		return s.exportHarvestsCSV(ctx, userID)
+	case ExportDataTypeTasks:
+		return s.exportTasksCSV(ctx, userID)
+	case ExportDataTypeAll:
+		return s.exportAllCSV(ctx, userID)
+	default:
+		return nil, fmt.Errorf("unknown data type: %s", dataType)
+	}
+}
+
+// exportCropsCSV は作物データをCSV形式でエクスポートします。
+func (s *Service) exportCropsCSV(ctx context.Context, userID uint) (*CSVExportResult, error) {
+	crops, err := s.repos.Crop().GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// CSVヘッダー
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	// BOM for Excel compatibility
+	buf.WriteString("\xEF\xBB\xBF")
+
+	// ヘッダー行
+	header := []string{"ID", "名前", "品種", "植え付け日", "収穫予定日", "ステータス", "メモ", "作成日"}
+	if err := writer.Write(header); err != nil {
+		return nil, err
+	}
+
+	// データ行
+	for _, crop := range crops {
+		row := []string{
+			fmt.Sprintf("%d", crop.ID),
+			crop.Name,
+			crop.Variety,
+			crop.PlantedDate.Format("2006-01-02"),
+			crop.ExpectedHarvestDate.Format("2006-01-02"),
+			crop.Status,
+			crop.Notes,
+			crop.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+		if err := writer.Write(row); err != nil {
+			return nil, err
+		}
+	}
+
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return nil, err
+	}
+
+	return &CSVExportResult{
+		DataType:    ExportDataTypeCrops,
+		FileName:    fmt.Sprintf("crops_%s.csv", time.Now().Format("20060102_150405")),
+		ContentType: "text/csv; charset=utf-8",
+		Data:        buf.Bytes(),
+		RecordCount: len(crops),
+		GeneratedAt: time.Now(),
+	}, nil
+}
+
+// exportHarvestsCSV は収穫記録をCSV形式でエクスポートします。
+func (s *Service) exportHarvestsCSV(ctx context.Context, userID uint) (*CSVExportResult, error) {
+	harvests, err := s.repos.Harvest().GetByUserIDWithDateRange(ctx, userID, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// 作物名のキャッシュ
+	cropCache := make(map[uint]string)
+
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	// BOM for Excel compatibility
+	buf.WriteString("\xEF\xBB\xBF")
+
+	// ヘッダー行
+	header := []string{"ID", "作物ID", "作物名", "収穫日", "数量", "単位", "品質", "メモ", "作成日"}
+	if err := writer.Write(header); err != nil {
+		return nil, err
+	}
+
+	// データ行
+	for _, harvest := range harvests {
+		// 作物名を取得
+		cropName, ok := cropCache[harvest.CropID]
+		if !ok {
+			crop, err := s.repos.Crop().GetByID(ctx, harvest.CropID)
+			if err == nil {
+				cropName = crop.Name
+			}
+			cropCache[harvest.CropID] = cropName
+		}
+
+		row := []string{
+			fmt.Sprintf("%d", harvest.ID),
+			fmt.Sprintf("%d", harvest.CropID),
+			cropName,
+			harvest.HarvestDate.Format("2006-01-02"),
+			fmt.Sprintf("%.2f", harvest.Quantity),
+			harvest.QuantityUnit,
+			harvest.Quality,
+			harvest.Notes,
+			harvest.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+		if err := writer.Write(row); err != nil {
+			return nil, err
+		}
+	}
+
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return nil, err
+	}
+
+	return &CSVExportResult{
+		DataType:    ExportDataTypeHarvests,
+		FileName:    fmt.Sprintf("harvests_%s.csv", time.Now().Format("20060102_150405")),
+		ContentType: "text/csv; charset=utf-8",
+		Data:        buf.Bytes(),
+		RecordCount: len(harvests),
+		GeneratedAt: time.Now(),
+	}, nil
+}
+
+// exportTasksCSV はタスクデータをCSV形式でエクスポートします。
+func (s *Service) exportTasksCSV(ctx context.Context, userID uint) (*CSVExportResult, error) {
+	tasks, err := s.repos.Task().GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	// BOM for Excel compatibility
+	buf.WriteString("\xEF\xBB\xBF")
+
+	// ヘッダー行
+	header := []string{"ID", "タイトル", "説明", "期限", "優先度", "ステータス", "繰り返し", "完了日", "作成日"}
+	if err := writer.Write(header); err != nil {
+		return nil, err
+	}
+
+	// データ行
+	for _, task := range tasks {
+		row := []string{
+			fmt.Sprintf("%d", task.ID),
+			task.Title,
+			task.Description,
+			task.DueDate.Format("2006-01-02"),
+			task.Priority,
+			task.Status,
+			formatRecurrence(task.Recurrence, task.RecurrenceInterval),
+			formatNullableTime(task.CompletedAt),
+			task.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+		if err := writer.Write(row); err != nil {
+			return nil, err
+		}
+	}
+
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return nil, err
+	}
+
+	return &CSVExportResult{
+		DataType:    ExportDataTypeTasks,
+		FileName:    fmt.Sprintf("tasks_%s.csv", time.Now().Format("20060102_150405")),
+		ContentType: "text/csv; charset=utf-8",
+		Data:        buf.Bytes(),
+		RecordCount: len(tasks),
+		GeneratedAt: time.Now(),
+	}, nil
+}
+
+// exportAllCSV は全データを1つのZIPファイルにまとめてエクスポートします。
+// 各データタイプのCSVを個別に生成し、まとめて返します。
+func (s *Service) exportAllCSV(ctx context.Context, userID uint) (*CSVExportResult, error) {
+	// 各データタイプをエクスポート
+	cropsResult, err := s.exportCropsCSV(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to export crops: %w", err)
+	}
+
+	harvestsResult, err := s.exportHarvestsCSV(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to export harvests: %w", err)
+	}
+
+	tasksResult, err := s.exportTasksCSV(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to export tasks: %w", err)
+	}
+
+	// ZIPファイルを作成
+	var buf bytes.Buffer
+	zipWriter := zip.NewWriter(&buf)
+
+	// 各CSVをZIPに追加
+	files := []struct {
+		name string
+		data []byte
+	}{
+		{"crops.csv", cropsResult.Data},
+		{"harvests.csv", harvestsResult.Data},
+		{"tasks.csv", tasksResult.Data},
+	}
+
+	for _, file := range files {
+		w, err := zipWriter.Create(file.name)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := w.Write(file.data); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := zipWriter.Close(); err != nil {
+		return nil, err
+	}
+
+	totalRecords := cropsResult.RecordCount + harvestsResult.RecordCount + tasksResult.RecordCount
+
+	return &CSVExportResult{
+		DataType:    ExportDataTypeAll,
+		FileName:    fmt.Sprintf("export_all_%s.zip", time.Now().Format("20060102_150405")),
+		ContentType: "application/zip",
+		Data:        buf.Bytes(),
+		RecordCount: totalRecords,
+		GeneratedAt: time.Now(),
+	}, nil
+}
+
+// formatNullableDate は*time.Timeを文字列にフォーマットします（nilの場合は空文字）
+func formatNullableDate(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format("2006-01-02")
+}
+
+// formatNullableTime は*time.Timeを日時文字列にフォーマットします（nilの場合は空文字）
+func formatNullableTime(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format("2006-01-02 15:04:05")
+}
+
+// formatRecurrence は繰り返し設定を文字列にフォーマットします
+func formatRecurrence(recurrenceType string, interval int) string {
+	if recurrenceType == "" || recurrenceType == "none" {
+		return "なし"
+	}
+	typeStr := recurrenceType
+	switch recurrenceType {
+	case "daily":
+		typeStr = "日"
+	case "weekly":
+		typeStr = "週"
+	case "monthly":
+		typeStr = "月"
+	}
+	if interval > 1 {
+		return fmt.Sprintf("%d%sごと", interval, typeStr)
+	}
+	return fmt.Sprintf("毎%s", typeStr)
 }
