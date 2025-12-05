@@ -103,4 +103,20 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	// 収穫記録エンドポイント - 収穫量と品質の記録
 	crops.GET("/:id/harvests", h.GetHarvests)   // 収穫記録一覧取得
 	crops.POST("/:id/harvests", h.CreateHarvest) // 収穫記録追加
+
+	// Plot endpoints (protected)
+	// 区画管理エンドポイント - 菜園のグリッドレイアウト管理
+	plots := protected.Group("/plots")
+	plots.GET("", h.GetPlots)         // 全区画取得（statusクエリパラメータでフィルタ可能）
+	plots.POST("", h.CreatePlot)      // 新規区画作成
+	plots.GET("/:id", h.GetPlot)      // 特定区画取得
+	plots.PUT("/:id", h.UpdatePlot)   // 区画更新
+	plots.DELETE("/:id", h.DeletePlot) // 区画削除
+
+	// Plot assignment endpoints (nested under plots)
+	// 区画配置エンドポイント - 作物の配置管理
+	plots.POST("/:id/assign", h.AssignCrop)               // 作物を区画に配置
+	plots.DELETE("/:id/assign", h.UnassignCrop)           // 配置解除
+	plots.GET("/:id/assignments", h.GetPlotAssignments)   // 配置履歴取得
+	plots.GET("/:id/assignment", h.GetActivePlotAssignment) // アクティブな配置取得
 }

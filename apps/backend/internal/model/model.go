@@ -223,3 +223,69 @@ func (GrowthRecord) TableName() string {
 func (Harvest) TableName() string {
 	return "harvests"
 }
+
+// =============================================================================
+// Plot Domain Models - 区画管理モデル
+// =============================================================================
+
+// Plot は菜園の区画を表すモデルです。
+// 菜園をグリッド状に分割し、作物の配置を管理します。
+//
+// ステータス:
+//   - available: 空き
+//   - occupied: 使用中
+//
+// 土壌タイプ:
+//   - clay: 粘土質
+//   - sandy: 砂質
+//   - loamy: ローム（壌土）
+//   - peaty: 泥炭質
+//
+// 日当たり:
+//   - full_sun: 日向
+//   - partial_shade: 半日陰
+//   - shade: 日陰
+//
+// バリデーション:
+//   - Width > 0, Height > 0
+type Plot struct {
+	BaseModel
+	UserID    uint    `gorm:"index;not null" json:"user_id"`
+	Name      string  `gorm:"size:100;not null" json:"name"`
+	Width     float64 `gorm:"not null" json:"width"`            // メートル単位
+	Height    float64 `gorm:"not null" json:"height"`           // メートル単位
+	SoilType  string  `gorm:"size:20" json:"soil_type,omitempty"` // clay, sandy, loamy, peaty
+	Sunlight  string  `gorm:"size:20" json:"sunlight,omitempty"`  // full_sun, partial_shade, shade
+	Status    string  `gorm:"size:20;default:'available'" json:"status"` // available, occupied
+	PositionX *int    `json:"position_x,omitempty"` // グリッド内のX座標（任意）
+	PositionY *int    `json:"position_y,omitempty"` // グリッド内のY座標（任意）
+	Notes     string  `gorm:"size:1000" json:"notes,omitempty"`
+
+	// リレーション
+	User            User              `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	PlotAssignments []PlotAssignment  `gorm:"foreignKey:PlotID" json:"plot_assignments,omitempty"`
+}
+
+// PlotAssignment は区画への作物配置を表すモデルです。
+// 区画と作物の関連付けを管理し、配置履歴を記録します。
+type PlotAssignment struct {
+	BaseModel
+	PlotID       uint       `gorm:"index;not null" json:"plot_id"`
+	CropID       uint       `gorm:"index;not null" json:"crop_id"`
+	AssignedDate time.Time  `gorm:"not null" json:"assigned_date"`
+	UnassignedDate *time.Time `json:"unassigned_date,omitempty"` // 配置解除日（履歴用）
+
+	// リレーション
+	Plot Plot `gorm:"foreignKey:PlotID" json:"plot,omitempty"`
+	Crop Crop `gorm:"foreignKey:CropID" json:"crop,omitempty"`
+}
+
+// TableName overrides the table name for Plot
+func (Plot) TableName() string {
+	return "plots"
+}
+
+// TableName overrides the table name for PlotAssignment
+func (PlotAssignment) TableName() string {
+	return "plot_assignments"
+}

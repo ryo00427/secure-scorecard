@@ -665,3 +665,231 @@ func (s *Service) GetCropHarvests(ctx context.Context, cropID uint) ([]model.Har
 func (s *Service) DeleteHarvest(ctx context.Context, id uint) error {
 	return s.repos.Harvest().Delete(ctx, id)
 }
+
+// =============================================================================
+// Plot Service Methods - 区画管理サービスメソッド
+// =============================================================================
+// 菜園の区画（Plot）を管理します。
+// 区画は作物の配置場所として使用され、グリッドレイアウトをサポートします。
+
+// CreatePlot は新しい区画を作成します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - plot: 作成する区画（UserID, Name, Width, Heightは必須）
+//
+// 戻り値:
+//   - error: 作成に失敗した場合のエラー
+func (s *Service) CreatePlot(ctx context.Context, plot *model.Plot) error {
+	return s.repos.Plot().Create(ctx, plot)
+}
+
+// GetPlotByID はIDで区画を取得します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - id: 区画ID
+//
+// 戻り値:
+//   - *model.Plot: 見つかった区画
+//   - error: 区画が見つからない場合は gorm.ErrRecordNotFound
+func (s *Service) GetPlotByID(ctx context.Context, id uint) (*model.Plot, error) {
+	return s.repos.Plot().GetByID(ctx, id)
+}
+
+// GetUserPlots はユーザーの全区画を取得します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//
+// 戻り値:
+//   - []model.Plot: 区画の一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetUserPlots(ctx context.Context, userID uint) ([]model.Plot, error) {
+	return s.repos.Plot().GetByUserID(ctx, userID)
+}
+
+// GetUserPlotsByStatus はステータスでフィルタリングした区画を取得します。
+//
+// 有効なステータス:
+//   - "available": 空き
+//   - "occupied": 使用中
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//   - status: フィルタするステータス
+//
+// 戻り値:
+//   - []model.Plot: 該当する区画の一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetUserPlotsByStatus(ctx context.Context, userID uint, status string) ([]model.Plot, error) {
+	return s.repos.Plot().GetByUserIDAndStatus(ctx, userID, status)
+}
+
+// UpdatePlot は区画を更新します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - plot: 更新する区画（IDは必須）
+//
+// 戻り値:
+//   - error: 更新に失敗した場合のエラー
+func (s *Service) UpdatePlot(ctx context.Context, plot *model.Plot) error {
+	return s.repos.Plot().Update(ctx, plot)
+}
+
+// DeletePlot は区画と関連する配置履歴を削除します（トランザクション使用）。
+// N+1問題を避けるため、バッチ削除を使用します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - id: 削除する区画のID
+//
+// 戻り値:
+//   - error: 削除に失敗した場合のエラー
+func (s *Service) DeletePlot(ctx context.Context, id uint) error {
+	return s.repos.WithTransaction(ctx, func(txCtx context.Context) error {
+		// 関連する配置履歴を一括削除
+		if err := s.repos.PlotAssignment().DeleteByPlotID(txCtx, id); err != nil {
+			return err
+		}
+
+		// 区画を削除
+		return s.repos.Plot().Delete(txCtx, id)
+	})
+}
+
+// =============================================================================
+// PlotAssignment Service Methods - 区画配置サービスメソッド
+// =============================================================================
+// 区画への作物配置を管理します。
+// 配置履歴を追跡し、過去の配置も記録します。
+
+// AssignCropToPlot は作物を区画に配置します。
+// 既存のアクティブな配置がある場合は、まずそれを解除します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - plotID: 配置先の区画ID
+//   - cropID: 配置する作物ID
+//   - assignedDate: 配置日
+//
+// 戻り値:
+//   - *model.PlotAssignment: 作成された配置
+//   - error: 配置に失敗した場合のエラー
+func (s *Service) AssignCropToPlot(ctx context.Context, plotID, cropID uint, assignedDate time.Time) (*model.PlotAssignment, error) {
+	var result *model.PlotAssignment
+
+	err := s.repos.WithTransaction(ctx, func(txCtx context.Context) error {
+		// 既存のアクティブな配置を解除
+		existingAssignment, err := s.repos.PlotAssignment().GetActiveByPlotID(txCtx, plotID)
+		if err == nil && existingAssignment != nil {
+			now := time.Now()
+			existingAssignment.UnassignedDate = &now
+			if err := s.repos.PlotAssignment().Update(txCtx, existingAssignment); err != nil {
+				return err
+			}
+		}
+
+		// 新しい配置を作成
+		assignment := &model.PlotAssignment{
+			PlotID:       plotID,
+			CropID:       cropID,
+			AssignedDate: assignedDate,
+		}
+
+		if err := s.repos.PlotAssignment().Create(txCtx, assignment); err != nil {
+			return err
+		}
+
+		// 区画のステータスを occupied に更新
+		plot, err := s.repos.Plot().GetByID(txCtx, plotID)
+		if err != nil {
+			return err
+		}
+		plot.Status = "occupied"
+		if err := s.repos.Plot().Update(txCtx, plot); err != nil {
+			return err
+		}
+
+		result = assignment
+		return nil
+	})
+
+	return result, err
+}
+
+// UnassignCropFromPlot は区画から作物の配置を解除します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - plotID: 解除する区画ID
+//
+// 戻り値:
+//   - error: 解除に失敗した場合のエラー
+func (s *Service) UnassignCropFromPlot(ctx context.Context, plotID uint) error {
+	return s.repos.WithTransaction(ctx, func(txCtx context.Context) error {
+		// アクティブな配置を取得
+		assignment, err := s.repos.PlotAssignment().GetActiveByPlotID(txCtx, plotID)
+		if err != nil {
+			return err
+		}
+
+		// 配置を解除
+		now := time.Now()
+		assignment.UnassignedDate = &now
+		if err := s.repos.PlotAssignment().Update(txCtx, assignment); err != nil {
+			return err
+		}
+
+		// 区画のステータスを available に更新
+		plot, err := s.repos.Plot().GetByID(txCtx, plotID)
+		if err != nil {
+			return err
+		}
+		plot.Status = "available"
+		return s.repos.Plot().Update(txCtx, plot)
+	})
+}
+
+// GetPlotAssignments は区画の全配置履歴を取得します。
+// 配置日（AssignedDate）の降順でソートされます。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - plotID: 区画ID
+//
+// 戻り値:
+//   - []model.PlotAssignment: 配置履歴の一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetPlotAssignments(ctx context.Context, plotID uint) ([]model.PlotAssignment, error) {
+	return s.repos.PlotAssignment().GetByPlotID(ctx, plotID)
+}
+
+// GetActivePlotAssignment は区画の現在アクティブな配置を取得します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - plotID: 区画ID
+//
+// 戻り値:
+//   - *model.PlotAssignment: アクティブな配置（UnassignedDateがNULL）
+//   - error: アクティブな配置がない場合は gorm.ErrRecordNotFound
+func (s *Service) GetActivePlotAssignment(ctx context.Context, plotID uint) (*model.PlotAssignment, error) {
+	return s.repos.PlotAssignment().GetActiveByPlotID(ctx, plotID)
+}
+
+// GetCropAssignments は作物の全配置履歴を取得します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - cropID: 作物ID
+//
+// 戻り値:
+//   - []model.PlotAssignment: 配置履歴の一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetCropAssignments(ctx context.Context, cropID uint) ([]model.PlotAssignment, error) {
+	return s.repos.PlotAssignment().GetByCropID(ctx, cropID)
+}

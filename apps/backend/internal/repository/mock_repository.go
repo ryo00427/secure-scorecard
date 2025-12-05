@@ -709,6 +709,259 @@ func (r *MockHarvestRepository) DeleteByCropID(ctx context.Context, cropID uint)
 }
 
 // =============================================================================
+// MockPlotRepository - 区画リポジトリのモック実装
+// =============================================================================
+
+// MockPlotRepository は PlotRepository インターフェースのモック実装です。
+// 区画管理機能のテストに使用します。
+type MockPlotRepository struct {
+	// Plots はIDをキーとした区画の格納Map
+	Plots map[uint]*model.Plot
+
+	// PlotsByUserID はユーザーIDをキーとした区画リストの格納Map
+	PlotsByUserID map[uint][]*model.Plot
+
+	// NextID は次に割り当てるID
+	NextID uint
+
+	// カスタム動作用のフック関数
+	CreateFunc               func(ctx context.Context, plot *model.Plot) error
+	GetByIDFunc              func(ctx context.Context, id uint) (*model.Plot, error)
+	GetByUserIDFunc          func(ctx context.Context, userID uint) ([]model.Plot, error)
+	GetByUserIDAndStatusFunc func(ctx context.Context, userID uint, status string) ([]model.Plot, error)
+	UpdateFunc               func(ctx context.Context, plot *model.Plot) error
+	DeleteFunc               func(ctx context.Context, id uint) error
+}
+
+// NewMockPlotRepository は新しいMockPlotRepositoryを作成します。
+func NewMockPlotRepository() *MockPlotRepository {
+	return &MockPlotRepository{
+		Plots:         make(map[uint]*model.Plot),
+		PlotsByUserID: make(map[uint][]*model.Plot),
+		NextID:        1,
+	}
+}
+
+// Create は新しい区画をメモリに保存します。
+func (r *MockPlotRepository) Create(ctx context.Context, plot *model.Plot) error {
+	if r.CreateFunc != nil {
+		return r.CreateFunc(ctx, plot)
+	}
+
+	plot.ID = r.NextID
+	r.NextID++
+	plot.CreatedAt = time.Now()
+	plot.UpdatedAt = time.Now()
+
+	r.Plots[plot.ID] = plot
+	r.PlotsByUserID[plot.UserID] = append(r.PlotsByUserID[plot.UserID], plot)
+
+	return nil
+}
+
+// GetByID はIDで区画を検索します。
+func (r *MockPlotRepository) GetByID(ctx context.Context, id uint) (*model.Plot, error) {
+	if r.GetByIDFunc != nil {
+		return r.GetByIDFunc(ctx, id)
+	}
+
+	if plot, ok := r.Plots[id]; ok {
+		return plot, nil
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+// GetByUserID はユーザーIDで全区画を取得します。
+func (r *MockPlotRepository) GetByUserID(ctx context.Context, userID uint) ([]model.Plot, error) {
+	if r.GetByUserIDFunc != nil {
+		return r.GetByUserIDFunc(ctx, userID)
+	}
+
+	plots := r.PlotsByUserID[userID]
+	result := make([]model.Plot, len(plots))
+	for i, p := range plots {
+		result[i] = *p
+	}
+	return result, nil
+}
+
+// GetByUserIDAndStatus はユーザーIDとステータスで区画を取得します。
+func (r *MockPlotRepository) GetByUserIDAndStatus(ctx context.Context, userID uint, status string) ([]model.Plot, error) {
+	if r.GetByUserIDAndStatusFunc != nil {
+		return r.GetByUserIDAndStatusFunc(ctx, userID, status)
+	}
+
+	var result []model.Plot
+	for _, p := range r.PlotsByUserID[userID] {
+		if p.Status == status {
+			result = append(result, *p)
+		}
+	}
+	return result, nil
+}
+
+// Update は区画を更新します。
+func (r *MockPlotRepository) Update(ctx context.Context, plot *model.Plot) error {
+	if r.UpdateFunc != nil {
+		return r.UpdateFunc(ctx, plot)
+	}
+
+	plot.UpdatedAt = time.Now()
+	r.Plots[plot.ID] = plot
+	return nil
+}
+
+// Delete は区画を削除します。
+func (r *MockPlotRepository) Delete(ctx context.Context, id uint) error {
+	if r.DeleteFunc != nil {
+		return r.DeleteFunc(ctx, id)
+	}
+
+	if plot, ok := r.Plots[id]; ok {
+		// PlotsByUserIDからも削除
+		userPlots := r.PlotsByUserID[plot.UserID]
+		for i, p := range userPlots {
+			if p.ID == id {
+				r.PlotsByUserID[plot.UserID] = append(userPlots[:i], userPlots[i+1:]...)
+				break
+			}
+		}
+		delete(r.Plots, id)
+	}
+	return nil
+}
+
+// =============================================================================
+// MockPlotAssignmentRepository - 区画配置リポジトリのモック実装
+// =============================================================================
+
+// MockPlotAssignmentRepository は PlotAssignmentRepository インターフェースのモック実装です。
+// 区画への作物配置管理機能のテストに使用します。
+type MockPlotAssignmentRepository struct {
+	// Assignments はIDをキーとした配置の格納Map
+	Assignments map[uint]*model.PlotAssignment
+
+	// AssignmentsByPlotID は区画IDをキーとした配置リストの格納Map
+	AssignmentsByPlotID map[uint][]*model.PlotAssignment
+
+	// AssignmentsByCropID は作物IDをキーとした配置リストの格納Map
+	AssignmentsByCropID map[uint][]*model.PlotAssignment
+
+	// NextID は次に割り当てるID
+	NextID uint
+}
+
+// NewMockPlotAssignmentRepository は新しいMockPlotAssignmentRepositoryを作成します。
+func NewMockPlotAssignmentRepository() *MockPlotAssignmentRepository {
+	return &MockPlotAssignmentRepository{
+		Assignments:         make(map[uint]*model.PlotAssignment),
+		AssignmentsByPlotID: make(map[uint][]*model.PlotAssignment),
+		AssignmentsByCropID: make(map[uint][]*model.PlotAssignment),
+		NextID:              1,
+	}
+}
+
+// Create は新しい区画配置をメモリに保存します。
+func (r *MockPlotAssignmentRepository) Create(ctx context.Context, assignment *model.PlotAssignment) error {
+	assignment.ID = r.NextID
+	r.NextID++
+	assignment.CreatedAt = time.Now()
+	assignment.UpdatedAt = time.Now()
+
+	r.Assignments[assignment.ID] = assignment
+	r.AssignmentsByPlotID[assignment.PlotID] = append(r.AssignmentsByPlotID[assignment.PlotID], assignment)
+	r.AssignmentsByCropID[assignment.CropID] = append(r.AssignmentsByCropID[assignment.CropID], assignment)
+
+	return nil
+}
+
+// GetByID はIDで区画配置を検索します。
+func (r *MockPlotAssignmentRepository) GetByID(ctx context.Context, id uint) (*model.PlotAssignment, error) {
+	if assignment, ok := r.Assignments[id]; ok {
+		return assignment, nil
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+// GetByPlotID は区画IDで全配置履歴を取得します。
+func (r *MockPlotAssignmentRepository) GetByPlotID(ctx context.Context, plotID uint) ([]model.PlotAssignment, error) {
+	assignments := r.AssignmentsByPlotID[plotID]
+	result := make([]model.PlotAssignment, len(assignments))
+	for i, a := range assignments {
+		result[i] = *a
+	}
+	return result, nil
+}
+
+// GetActiveByPlotID は区画の現在アクティブな配置を取得します。
+func (r *MockPlotAssignmentRepository) GetActiveByPlotID(ctx context.Context, plotID uint) (*model.PlotAssignment, error) {
+	for _, a := range r.AssignmentsByPlotID[plotID] {
+		if a.UnassignedDate == nil {
+			return a, nil
+		}
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+// GetByCropID は作物IDで全配置履歴を取得します。
+func (r *MockPlotAssignmentRepository) GetByCropID(ctx context.Context, cropID uint) ([]model.PlotAssignment, error) {
+	assignments := r.AssignmentsByCropID[cropID]
+	result := make([]model.PlotAssignment, len(assignments))
+	for i, a := range assignments {
+		result[i] = *a
+	}
+	return result, nil
+}
+
+// Update は区画配置を更新します。
+func (r *MockPlotAssignmentRepository) Update(ctx context.Context, assignment *model.PlotAssignment) error {
+	assignment.UpdatedAt = time.Now()
+	r.Assignments[assignment.ID] = assignment
+	return nil
+}
+
+// Delete は区画配置を削除します。
+func (r *MockPlotAssignmentRepository) Delete(ctx context.Context, id uint) error {
+	if assignment, ok := r.Assignments[id]; ok {
+		// AssignmentsByPlotIDからも削除
+		plotAssignments := r.AssignmentsByPlotID[assignment.PlotID]
+		for i, a := range plotAssignments {
+			if a.ID == id {
+				r.AssignmentsByPlotID[assignment.PlotID] = append(plotAssignments[:i], plotAssignments[i+1:]...)
+				break
+			}
+		}
+		// AssignmentsByCropIDからも削除
+		cropAssignments := r.AssignmentsByCropID[assignment.CropID]
+		for i, a := range cropAssignments {
+			if a.ID == id {
+				r.AssignmentsByCropID[assignment.CropID] = append(cropAssignments[:i], cropAssignments[i+1:]...)
+				break
+			}
+		}
+		delete(r.Assignments, id)
+	}
+	return nil
+}
+
+// DeleteByPlotID は区画IDで全配置を削除します（バッチ削除）。
+func (r *MockPlotAssignmentRepository) DeleteByPlotID(ctx context.Context, plotID uint) error {
+	for _, assignment := range r.AssignmentsByPlotID[plotID] {
+		// AssignmentsByCropIDからも削除
+		cropAssignments := r.AssignmentsByCropID[assignment.CropID]
+		for i, a := range cropAssignments {
+			if a.ID == assignment.ID {
+				r.AssignmentsByCropID[assignment.CropID] = append(cropAssignments[:i], cropAssignments[i+1:]...)
+				break
+			}
+		}
+		delete(r.Assignments, assignment.ID)
+	}
+	delete(r.AssignmentsByPlotID, plotID)
+	return nil
+}
+
+// =============================================================================
 // MockRepositories - 全モックを束ねるファサード
 // =============================================================================
 
@@ -728,6 +981,8 @@ type MockRepositories struct {
 	cropRepo           *MockCropRepository
 	growthRecordRepo   *MockGrowthRecordRepository
 	harvestRepo        *MockHarvestRepository
+	plotRepo           *MockPlotRepository
+	plotAssignmentRepo *MockPlotAssignmentRepository
 }
 
 // NewMockRepositories は新しいMockRepositoriesを作成します。
@@ -743,6 +998,8 @@ func NewMockRepositories() *MockRepositories {
 		cropRepo:           NewMockCropRepository(),
 		growthRecordRepo:   NewMockGrowthRecordRepository(),
 		harvestRepo:        NewMockHarvestRepository(),
+		plotRepo:           NewMockPlotRepository(),
+		plotAssignmentRepo: NewMockPlotAssignmentRepository(),
 	}
 }
 
@@ -790,6 +1047,16 @@ func (m *MockRepositories) GrowthRecord() GrowthRecordRepository {
 // Harvest は HarvestRepository インターフェースを返します。
 func (m *MockRepositories) Harvest() HarvestRepository {
 	return m.harvestRepo
+}
+
+// Plot は PlotRepository インターフェースを返します。
+func (m *MockRepositories) Plot() PlotRepository {
+	return m.plotRepo
+}
+
+// PlotAssignment は PlotAssignmentRepository インターフェースを返します。
+func (m *MockRepositories) PlotAssignment() PlotAssignmentRepository {
+	return m.plotAssignmentRepo
 }
 
 // WithTransaction はトランザクション処理をシミュレートします。
@@ -853,4 +1120,15 @@ func (m *MockRepositories) GetMockGrowthRecordRepository() *MockGrowthRecordRepo
 // GetMockHarvestRepository はテスト用に内部の収穫記録モックを返します。
 func (m *MockRepositories) GetMockHarvestRepository() *MockHarvestRepository {
 	return m.harvestRepo
+}
+
+// GetMockPlotRepository はテスト用に内部の区画モックを返します。
+// 区画のテストデータセットアップやカスタム動作注入に使用します。
+func (m *MockRepositories) GetMockPlotRepository() *MockPlotRepository {
+	return m.plotRepo
+}
+
+// GetMockPlotAssignmentRepository はテスト用に内部の区画配置モックを返します。
+func (m *MockRepositories) GetMockPlotAssignmentRepository() *MockPlotAssignmentRepository {
+	return m.plotAssignmentRepo
 }
