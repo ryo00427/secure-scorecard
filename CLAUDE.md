@@ -328,6 +328,79 @@ db.Model(&Model{}).Where("status = ?", "old").Update("status", "new")
 
 **重要**: ループでDB操作を見たら N+1 問題を疑う
 
+### 9. Repository Manager に新しいリポジトリを追加する際の3ステップ
+
+**失敗例**: `transaction.go` に新しいリポジトリのフィールドと初期化を追加したが、アクセサメソッドを忘れた
+
+```go
+// 🔴 悪い例: 2ステップだけ実行（3つ目を忘れた）
+type repositoryManager struct {
+    db   *gorm.DB
+    task *taskRepository  // ✅ ステップ1: フィールド追加
+}
+
+func NewRepositoryManager(db *gorm.DB) Repositories {
+    return &repositoryManager{
+        db:   db,
+        task: &taskRepository{db: db},  // ✅ ステップ2: 初期化
+    }
+}
+// ❌ ステップ3 を忘れた: Task() TaskRepository メソッド
+```
+
+**原因**:
+
+- 構造体フィールドと初期化だけで「完了」と思い込んだ
+- インターフェースを満たすためのメソッドを見落とした
+- ビルドするまでエラーに気づかない
+
+**対策**: 3ステップを必ず実行する
+
+```go
+// ✅ 良い例: 3ステップすべて実行
+
+// ステップ1: 構造体にフィールド追加
+type repositoryManager struct {
+    db   *gorm.DB
+    task *taskRepository
+}
+
+// ステップ2: コンストラクタで初期化
+func NewRepositoryManager(db *gorm.DB) Repositories {
+    return &repositoryManager{
+        db:   db,
+        task: &taskRepository{db: db},
+    }
+}
+
+// ステップ3: アクセサメソッド追加（これを忘れがち！）
+func (m *repositoryManager) Task() TaskRepository {
+    return m.task
+}
+```
+
+**新しいリポジトリ追加チェックリスト**:
+
+```
+Repository Manager (transaction.go):
+□ ステップ1: repositoryManager 構造体にフィールド追加
+□ ステップ2: NewRepositoryManager() で初期化
+□ ステップ3: アクセサメソッド追加 (例: Task() TaskRepository)
+
+インターフェース (interfaces.go):
+□ 新しい Repository インターフェース定義
+□ Repositories インターフェースにメソッド追加
+
+モック (mock_repository.go):
+□ Mock構造体の定義
+□ MockRepositories に追加
+□ NewMockRepositories() で初期化
+□ アクセサメソッド追加
+□ GetMock*Repository() ヘルパー追加
+```
+
+**重要**: インターフェースを満たすには、フィールド追加だけでなくメソッド追加が必須
+
 ## モノレポ構成
 
 ```
