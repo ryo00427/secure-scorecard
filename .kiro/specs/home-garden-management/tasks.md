@@ -282,7 +282,7 @@
   - Materialized View活用（mv_harvest_analytics）
   - _Requirements: 4.1_
 
-- [ ] 9.2 (P) AnalyticsService - グラフデータ生成機能
+- [x] 9.2 (P) AnalyticsService - グラフデータ生成機能
   - `GET /api/analytics/charts/:type` グラフデータ取得エンドポイント
   - 月別・作物別の収穫量データ生成（MonthlyHarvest, CropComparison）
   - 区画生産性データ生成（PlotProductivity）
