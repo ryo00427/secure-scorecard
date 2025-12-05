@@ -227,14 +227,14 @@
   - 配置履歴記録
   - _Requirements: 2.2, 2.5_
 
-- [ ] 7.3 (P) PlotService - レイアウトと履歴機能
+- [x] 7.3 (P) PlotService - レイアウトと履歴機能
   - `GET /api/plots/layout` レイアウト取得エンドポイント（グリッド表示用）
   - `GET /api/plots/:id/history` 区画使用履歴取得エンドポイント
   - 区画位置情報（positionX, positionY）を含むレイアウトデータ生成
   - 過去の栽培作物履歴クエリ
   - _Requirements: 2.3, 2.4_
 
-- [ ] 7.4* PlotService - ユニットテスト
+- [x] 7.4* PlotService - ユニットテスト
   - createPlot正常系テスト
   - assignCrop正常系テスト（重複チェック含む）
   - assignCrop異常系テスト（PlotOccupiedエラー）
