@@ -38,9 +38,53 @@
 .kiro\steering\structure.md
 .kiro\steering\tech.md
 
-# 実装の際にはコメント追加してください
+### 実装の際には日本語コメントを追加する
 
-解説のコメントを入れるようにしてください
+**要件**: コードを実装する際は、日本語で解説コメントを入れること
+
+**コメントを入れる場所**:
+
+```go
+// パッケージレベルのドキュメント
+// Package handler - タスク管理のHTTPハンドラ
+//
+// エンドポイント:
+//   - GET /api/v1/tasks - 全タスク取得
+//   - POST /api/v1/tasks - 新規作成
+package handler
+
+// 構造体の説明
+// CreateTaskRequest はタスク作成リクエストの構造体です。
+type CreateTaskRequest struct {
+    Title string `json:"title"` // タスクのタイトル
+}
+
+// 関数/メソッドの説明
+// CreateTask は新しいタスクを作成します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - task: 作成するタスク
+//
+// 戻り値:
+//   - error: 作成に失敗した場合のエラー
+func (s *Service) CreateTask(ctx context.Context, task *model.Task) error {
+    // ビジネスロジックの説明
+    return s.repos.Task().Create(ctx, task)
+}
+```
+
+**コメントの書き方**:
+
+```
+□ パッケージ: ファイルの目的と提供する機能
+□ 構造体: 何を表すか、各フィールドの意味
+□ 関数/メソッド: 処理内容、引数、戻り値の説明
+□ 複雑なロジック: なぜその実装になっているか
+□ セクション区切り: ==== で視覚的に分離
+```
+
+**重要**: コードが複雑になるほど、コメントは必須
 
 ### 0. IDEの診断エラーは実際のビルドで確認する
 
