@@ -990,3 +990,146 @@ func (s *Service) GetPlotHistory(ctx context.Context, plotID uint) ([]PlotHistor
 
 	return historyItems, nil
 }
+
+// =============================================================================
+// Analytics Service Methods - 分析サービスメソッド
+// =============================================================================
+// 収穫量の集計やグラフデータの生成を行います。
+
+// HarvestSummary は収穫量集計の結果を表します。
+type HarvestSummary struct {
+	TotalHarvests      int                `json:"total_harvests"`       // 総収穫回数
+	TotalQuantityKg    float64            `json:"total_quantity_kg"`    // 総収穫量（kg換算）
+	CropSummaries      []CropHarvestSummary `json:"crop_summaries"`     // 作物ごとの集計
+	QualityDistribution map[string]int    `json:"quality_distribution"` // 品質別の分布
+}
+
+// CropHarvestSummary は作物ごとの収穫集計を表します。
+type CropHarvestSummary struct {
+	CropID            uint    `json:"crop_id"`
+	CropName          string  `json:"crop_name"`
+	HarvestCount      int     `json:"harvest_count"`       // 収穫回数
+	TotalQuantity     float64 `json:"total_quantity"`      // 総収穫量
+	QuantityUnit      string  `json:"quantity_unit"`       // 数量単位
+	TotalQuantityKg   float64 `json:"total_quantity_kg"`   // kg換算の総収穫量
+	AverageQuantity   float64 `json:"average_quantity"`    // 平均収穫量
+	AverageGrowthDays int     `json:"average_growth_days"` // 平均成長日数
+}
+
+// HarvestFilter は収穫データのフィルタ条件を表します。
+type HarvestFilter struct {
+	StartDate *time.Time `json:"start_date,omitempty"`
+	EndDate   *time.Time `json:"end_date,omitempty"`
+	CropID    *uint      `json:"crop_id,omitempty"`
+}
+
+// GetHarvestSummary はユーザーの収穫量集計を取得します。
+// フィルタ条件に基づいて、作物ごとの総収穫量・平均成長期間を集計します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//   - filter: フィルタ条件（日付範囲、作物ID）
+//
+// 戻り値:
+//   - *HarvestSummary: 集計結果
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetHarvestSummary(ctx context.Context, userID uint, filter HarvestFilter) (*HarvestSummary, error) {
+	// 収穫データを取得
+	harvests, err := s.repos.Harvest().GetByUserIDWithDateRange(ctx, userID, filter.StartDate, filter.EndDate)
+	if err != nil {
+		return nil, err
+	}
+
+	// 作物情報を取得するためのマップ
+	cropCache := make(map[uint]*model.Crop)
+
+	// 作物IDでフィルタ
+	if filter.CropID != nil {
+		var filtered []model.Harvest
+		for _, h := range harvests {
+			if h.CropID == *filter.CropID {
+				filtered = append(filtered, h)
+			}
+		}
+		harvests = filtered
+	}
+
+	// 作物ごとに集計
+	cropStats := make(map[uint]*CropHarvestSummary)
+	qualityDist := make(map[string]int)
+
+	for _, harvest := range harvests {
+		// 作物情報をキャッシュから取得または取得
+		crop, ok := cropCache[harvest.CropID]
+		if !ok {
+			crop, err = s.repos.Crop().GetByID(ctx, harvest.CropID)
+			if err != nil {
+				continue // 作物が見つからない場合はスキップ
+			}
+			cropCache[harvest.CropID] = crop
+		}
+
+		// 作物ごとの集計を更新
+		stats, ok := cropStats[harvest.CropID]
+		if !ok {
+			stats = &CropHarvestSummary{
+				CropID:       harvest.CropID,
+				CropName:     crop.Name,
+				QuantityUnit: harvest.QuantityUnit,
+			}
+			cropStats[harvest.CropID] = stats
+		}
+
+		stats.HarvestCount++
+		stats.TotalQuantity += harvest.Quantity
+		stats.TotalQuantityKg += convertToKg(harvest.Quantity, harvest.QuantityUnit)
+
+		// 成長日数を計算（植え付け日から収穫日まで）
+		if !crop.PlantedDate.IsZero() {
+			growthDays := int(harvest.HarvestDate.Sub(crop.PlantedDate).Hours() / 24)
+			if growthDays > 0 {
+				stats.AverageGrowthDays = (stats.AverageGrowthDays*(stats.HarvestCount-1) + growthDays) / stats.HarvestCount
+			}
+		}
+
+		// 品質分布を更新
+		if harvest.Quality != "" {
+			qualityDist[harvest.Quality]++
+		}
+	}
+
+	// 平均収穫量を計算
+	var cropSummaries []CropHarvestSummary
+	var totalKg float64
+	for _, stats := range cropStats {
+		if stats.HarvestCount > 0 {
+			stats.AverageQuantity = stats.TotalQuantity / float64(stats.HarvestCount)
+		}
+		cropSummaries = append(cropSummaries, *stats)
+		totalKg += stats.TotalQuantityKg
+	}
+
+	return &HarvestSummary{
+		TotalHarvests:       len(harvests),
+		TotalQuantityKg:     totalKg,
+		CropSummaries:       cropSummaries,
+		QualityDistribution: qualityDist,
+	}, nil
+}
+
+// convertToKg は指定された単位の数量をkg単位に換算します。
+// pieces（個数）の場合は、1個=0.1kgとして概算します。
+func convertToKg(quantity float64, unit string) float64 {
+	switch unit {
+	case "kg":
+		return quantity
+	case "g":
+		return quantity / 1000
+	case "pieces":
+		// 1個=0.1kg（100g）として概算
+		return quantity * 0.1
+	default:
+		return quantity
+	}
+}

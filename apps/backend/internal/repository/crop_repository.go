@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/secure-scorecard/backend/internal/model"
 	"gorm.io/gorm"
@@ -140,4 +141,39 @@ func (r *harvestRepository) Delete(ctx context.Context, id uint) error {
 // DeleteByCropID deletes all harvest records for a crop (batch delete to avoid N+1)
 func (r *harvestRepository) DeleteByCropID(ctx context.Context, cropID uint) error {
 	return GetDB(ctx, r.db).Where("crop_id = ?", cropID).Delete(&model.Harvest{}).Error
+}
+
+// GetByUserIDWithDateRange はユーザーの収穫記録を日付範囲でフィルタして取得します。
+// Analytics用のクエリで、cropsテーブルとJOINしてユーザーの収穫データを取得します。
+// startDate/endDateがnilの場合は、その方向の制限はありません。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//   - startDate: 開始日（nilの場合は制限なし）
+//   - endDate: 終了日（nilの場合は制限なし）
+//
+// 戻り値:
+//   - []model.Harvest: 収穫記録の一覧（収穫日の降順）
+//   - error: 取得に失敗した場合のエラー
+func (r *harvestRepository) GetByUserIDWithDateRange(ctx context.Context, userID uint, startDate, endDate *time.Time) ([]model.Harvest, error) {
+	db := GetDB(ctx, r.db)
+
+	// cropsテーブルとJOINしてユーザーの収穫データを取得
+	query := db.Joins("JOIN crops ON crops.id = harvests.crop_id AND crops.deleted_at IS NULL").
+		Where("crops.user_id = ?", userID)
+
+	// 日付範囲フィルタ
+	if startDate != nil {
+		query = query.Where("harvests.harvest_date >= ?", *startDate)
+	}
+	if endDate != nil {
+		query = query.Where("harvests.harvest_date <= ?", *endDate)
+	}
+
+	var harvests []model.Harvest
+	if err := query.Order("harvests.harvest_date DESC").Find(&harvests).Error; err != nil {
+		return nil, err
+	}
+	return harvests, nil
 }

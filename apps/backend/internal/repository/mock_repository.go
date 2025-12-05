@@ -639,8 +639,14 @@ type MockHarvestRepository struct {
 	// HarvestsByCropID は作物IDをキーとした収穫記録リストの格納Map
 	HarvestsByCropID map[uint][]*model.Harvest
 
+	// HarvestsByUserID はユーザーIDをキーとした収穫記録リストの格納Map（Analytics用）
+	HarvestsByUserID map[uint][]*model.Harvest
+
 	// NextID は次に割り当てるID
 	NextID uint
+
+	// カスタム動作用のフック関数
+	GetByUserIDWithDateRangeFunc func(ctx context.Context, userID uint, startDate, endDate *time.Time) ([]model.Harvest, error)
 }
 
 // NewMockHarvestRepository は新しいMockHarvestRepositoryを作成します。
@@ -648,6 +654,7 @@ func NewMockHarvestRepository() *MockHarvestRepository {
 	return &MockHarvestRepository{
 		Harvests:         make(map[uint]*model.Harvest),
 		HarvestsByCropID: make(map[uint][]*model.Harvest),
+		HarvestsByUserID: make(map[uint][]*model.Harvest),
 		NextID:           1,
 	}
 }
@@ -706,6 +713,43 @@ func (r *MockHarvestRepository) DeleteByCropID(ctx context.Context, cropID uint)
 	}
 	delete(r.HarvestsByCropID, cropID)
 	return nil
+}
+
+// GetByUserIDWithDateRange はユーザーの収穫記録を日付範囲でフィルタして取得します。
+// HarvestsByUserIDに事前にデータをセットするか、GetByUserIDWithDateRangeFuncを使用してください。
+func (r *MockHarvestRepository) GetByUserIDWithDateRange(ctx context.Context, userID uint, startDate, endDate *time.Time) ([]model.Harvest, error) {
+	// カスタム関数が設定されている場合はそれを使用
+	if r.GetByUserIDWithDateRangeFunc != nil {
+		return r.GetByUserIDWithDateRangeFunc(ctx, userID, startDate, endDate)
+	}
+
+	// デフォルト: HarvestsByUserIDからフィルタリング
+	harvests := r.HarvestsByUserID[userID]
+	var result []model.Harvest
+	for _, h := range harvests {
+		// 日付範囲フィルタ
+		if startDate != nil && h.HarvestDate.Before(*startDate) {
+			continue
+		}
+		if endDate != nil && h.HarvestDate.After(*endDate) {
+			continue
+		}
+		result = append(result, *h)
+	}
+	return result, nil
+}
+
+// AddHarvestForUser はテスト用にユーザーIDに関連付けて収穫記録を追加します。
+// Analytics機能のテストで使用します。
+func (r *MockHarvestRepository) AddHarvestForUser(userID uint, harvest *model.Harvest) {
+	harvest.ID = r.NextID
+	r.NextID++
+	harvest.CreatedAt = time.Now()
+	harvest.UpdatedAt = time.Now()
+
+	r.Harvests[harvest.ID] = harvest
+	r.HarvestsByCropID[harvest.CropID] = append(r.HarvestsByCropID[harvest.CropID], harvest)
+	r.HarvestsByUserID[userID] = append(r.HarvestsByUserID[userID], harvest)
 }
 
 // =============================================================================
