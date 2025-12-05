@@ -296,7 +296,7 @@
   - S3へのアップロードと署名付きURL生成（1時間有効）
   - _Requirements: 4.5_
 
-- [ ] 9.4* AnalyticsService - ユニットテスト
+- [x] 9.4* AnalyticsService - ユニットテスト
   - getHarvestSummary正常系テスト（フィルター適用確認）
   - getChartData正常系テスト（データフォーマット確認）
   - exportCSV正常系テスト（CSV生成確認）
