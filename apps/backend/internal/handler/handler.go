@@ -109,6 +109,7 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	plots := protected.Group("/plots")
 	plots.GET("", h.GetPlots)         // 全区画取得（statusクエリパラメータでフィルタ可能）
 	plots.POST("", h.CreatePlot)      // 新規区画作成
+	plots.GET("/layout", h.GetPlotLayout) // 全区画のレイアウトデータ取得（グリッド表示用）
 	plots.GET("/:id", h.GetPlot)      // 特定区画取得
 	plots.PUT("/:id", h.UpdatePlot)   // 区画更新
 	plots.DELETE("/:id", h.DeletePlot) // 区画削除
@@ -119,4 +120,5 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	plots.DELETE("/:id/assign", h.UnassignCrop)           // 配置解除
 	plots.GET("/:id/assignments", h.GetPlotAssignments)   // 配置履歴取得
 	plots.GET("/:id/assignment", h.GetActivePlotAssignment) // アクティブな配置取得
+	plots.GET("/:id/history", h.GetPlotHistory) // 区画の栽培履歴取得（作物情報付き）
 }

@@ -167,7 +167,7 @@
 
 ## 6. バックエンド - CropService実装
 
-- [ ] 6.1 (P) CropService - 作物CRUD実装
+- [x] 6.1 (P) CropService - 作物CRUD実装
   - `POST /api/crops` 作物新規登録エンドポイント
   - `GET /api/crops/:id` 作物詳細取得エンドポイント
   - `GET /api/crops` 作物一覧取得エンドポイント（フィルター対応）
@@ -201,7 +201,7 @@
   - S3アップロード失敗時のExponential backoffリトライ機構（初回1秒、最大3回）
   - _Requirements: 1.2_
 
-- [ ] 6.5* CropService - ユニットテスト
+- [x] 6.5* CropService - ユニットテスト
   - createCrop正常系テスト
   - addGrowthRecord正常系テスト（画像URLバリデーション含む）
   - recordHarvest正常系・異常系テスト（日付バリデーション）
@@ -209,7 +209,7 @@
 
 ## 7. バックエンド - PlotService実装
 
-- [ ] 7.1 (P) PlotService - 区画CRUD実装
+- [x] 7.1 (P) PlotService - 区画CRUD実装
   - `POST /api/plots` 区画新規登録エンドポイント
   - `GET /api/plots/:id` 区画詳細取得エンドポイント
   - `GET /api/plots` 区画一覧取得エンドポイント
@@ -218,7 +218,7 @@
   - 土壌タイプ・日当たり条件のEnum検証
   - _Requirements: 2.1_
 
-- [ ] 7.2 PlotService - 作物配置機能
+- [x] 7.2 PlotService - 作物配置機能
   - `POST /api/plots/:id/assign` 作物配置エンドポイント
   - `DELETE /api/plots/:id/assign` 作物配置解除エンドポイント
   - plot_assignmentsテーブル操作

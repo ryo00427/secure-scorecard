@@ -418,3 +418,60 @@ func (h *Handler) GetActivePlotAssignment(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, assignment)
 }
+
+// =============================================================================
+// Plot Layout & History ハンドラメソッド
+// =============================================================================
+
+// GetPlotLayout はユーザーの全区画のレイアウトデータを取得します。
+// グリッド表示用に、各区画の位置と現在の配置状態を含むデータを返します。
+//
+// レスポンス:
+//   - 200: レイアウトデータの配列（各要素に区画、アクティブな配置、作物情報を含む）
+//   - 401: 認証エラー
+//   - 500: 内部エラー
+func (h *Handler) GetPlotLayout(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// 認証済みユーザーIDを取得
+	userID := auth.GetUserIDFromContext(c)
+	if userID == 0 {
+		return apperrors.NewAuthenticationError("Not authenticated")
+	}
+
+	// レイアウトデータを取得
+	layout, err := h.service.GetPlotLayout(ctx, userID)
+	if err != nil {
+		return apperrors.NewInternalError("Failed to fetch plot layout")
+	}
+
+	return c.JSON(http.StatusOK, layout)
+}
+
+// GetPlotHistory は区画の栽培履歴を取得します。
+// 過去にこの区画で栽培された作物の一覧を返します。
+//
+// パスパラメータ:
+//   - id: 区画ID
+//
+// レスポンス:
+//   - 200: 履歴データの配列（各要素に配置情報と作物情報を含む）
+//   - 400: 無効なID形式
+//   - 500: 内部エラー
+func (h *Handler) GetPlotHistory(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// パスパラメータからIDを取得
+	plotID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return apperrors.NewBadRequestError("Invalid plot ID")
+	}
+
+	// 履歴データを取得
+	history, err := h.service.GetPlotHistory(ctx, uint(plotID))
+	if err != nil {
+		return apperrors.NewInternalError("Failed to fetch plot history")
+	}
+
+	return c.JSON(http.StatusOK, history)
+}
