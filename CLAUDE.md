@@ -38,9 +38,53 @@
 .kiro\steering\structure.md
 .kiro\steering\tech.md
 
-# 実装の際にはコメント追加してください
+### 実装の際には日本語コメントを追加する
 
-解説のコメントを入れるようにしてください
+**要件**: コードを実装する際は、日本語で解説コメントを入れること
+
+**コメントを入れる場所**:
+
+```go
+// パッケージレベルのドキュメント
+// Package handler - タスク管理のHTTPハンドラ
+//
+// エンドポイント:
+//   - GET /api/v1/tasks - 全タスク取得
+//   - POST /api/v1/tasks - 新規作成
+package handler
+
+// 構造体の説明
+// CreateTaskRequest はタスク作成リクエストの構造体です。
+type CreateTaskRequest struct {
+    Title string `json:"title"` // タスクのタイトル
+}
+
+// 関数/メソッドの説明
+// CreateTask は新しいタスクを作成します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - task: 作成するタスク
+//
+// 戻り値:
+//   - error: 作成に失敗した場合のエラー
+func (s *Service) CreateTask(ctx context.Context, task *model.Task) error {
+    // ビジネスロジックの説明
+    return s.repos.Task().Create(ctx, task)
+}
+```
+
+**コメントの書き方**:
+
+```
+□ パッケージ: ファイルの目的と提供する機能
+□ 構造体: 何を表すか、各フィールドの意味
+□ 関数/メソッド: 処理内容、引数、戻り値の説明
+□ 複雑なロジック: なぜその実装になっているか
+□ セクション区切り: ==== で視覚的に分離
+```
+
+**重要**: コードが複雑になるほど、コメントは必須
 
 ### 0. IDEの診断エラーは実際のビルドで確認する
 
@@ -327,6 +371,79 @@ db.Model(&Model{}).Where("status = ?", "old").Update("status", "new")
 ```
 
 **重要**: ループでDB操作を見たら N+1 問題を疑う
+
+### 9. Repository Manager に新しいリポジトリを追加する際の3ステップ
+
+**失敗例**: `transaction.go` に新しいリポジトリのフィールドと初期化を追加したが、アクセサメソッドを忘れた
+
+```go
+// 🔴 悪い例: 2ステップだけ実行（3つ目を忘れた）
+type repositoryManager struct {
+    db   *gorm.DB
+    task *taskRepository  // ✅ ステップ1: フィールド追加
+}
+
+func NewRepositoryManager(db *gorm.DB) Repositories {
+    return &repositoryManager{
+        db:   db,
+        task: &taskRepository{db: db},  // ✅ ステップ2: 初期化
+    }
+}
+// ❌ ステップ3 を忘れた: Task() TaskRepository メソッド
+```
+
+**原因**:
+
+- 構造体フィールドと初期化だけで「完了」と思い込んだ
+- インターフェースを満たすためのメソッドを見落とした
+- ビルドするまでエラーに気づかない
+
+**対策**: 3ステップを必ず実行する
+
+```go
+// ✅ 良い例: 3ステップすべて実行
+
+// ステップ1: 構造体にフィールド追加
+type repositoryManager struct {
+    db   *gorm.DB
+    task *taskRepository
+}
+
+// ステップ2: コンストラクタで初期化
+func NewRepositoryManager(db *gorm.DB) Repositories {
+    return &repositoryManager{
+        db:   db,
+        task: &taskRepository{db: db},
+    }
+}
+
+// ステップ3: アクセサメソッド追加（これを忘れがち！）
+func (m *repositoryManager) Task() TaskRepository {
+    return m.task
+}
+```
+
+**新しいリポジトリ追加チェックリスト**:
+
+```
+Repository Manager (transaction.go):
+□ ステップ1: repositoryManager 構造体にフィールド追加
+□ ステップ2: NewRepositoryManager() で初期化
+□ ステップ3: アクセサメソッド追加 (例: Task() TaskRepository)
+
+インターフェース (interfaces.go):
+□ 新しい Repository インターフェース定義
+□ Repositories インターフェースにメソッド追加
+
+モック (mock_repository.go):
+□ Mock構造体の定義
+□ MockRepositories に追加
+□ NewMockRepositories() で初期化
+□ アクセサメソッド追加
+□ GetMock*Repository() ヘルパー追加
+```
+
+**重要**: インターフェースを満たすには、フィールド追加だけでなくメソッド追加が必須
 
 ## モノレポ構成
 

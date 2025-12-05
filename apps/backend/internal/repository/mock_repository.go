@@ -273,6 +273,157 @@ func (r *MockCareLogRepository) GetByPlantID(ctx context.Context, plantID uint) 
 func (r *MockCareLogRepository) Delete(ctx context.Context, id uint) error { return nil }
 
 // =============================================================================
+// MockTaskRepository - タスクリポジトリのモック実装
+// =============================================================================
+
+// MockTaskRepository は TaskRepository インターフェースのモック実装です。
+// タスク管理機能のテストに使用します。
+type MockTaskRepository struct {
+	// Tasks はIDをキーとしたタスクの格納Map
+	Tasks map[uint]*model.Task
+
+	// TasksByUserID はユーザーIDをキーとしたタスクリストの格納Map
+	// ユーザーごとのタスク一覧取得をO(1)で実現
+	TasksByUserID map[uint][]*model.Task
+
+	// NextID は次に割り当てるID（自動インクリメントをシミュレート）
+	NextID uint
+
+	// カスタム動作用のフック関数
+	CreateFunc             func(ctx context.Context, task *model.Task) error
+	GetByIDFunc            func(ctx context.Context, id uint) (*model.Task, error)
+	GetByUserIDFunc        func(ctx context.Context, userID uint) ([]model.Task, error)
+	GetByUserIDAndStatusFunc func(ctx context.Context, userID uint, status string) ([]model.Task, error)
+	UpdateFunc             func(ctx context.Context, task *model.Task) error
+	DeleteFunc             func(ctx context.Context, id uint) error
+}
+
+// NewMockTaskRepository は新しいMockTaskRepositoryを作成します。
+func NewMockTaskRepository() *MockTaskRepository {
+	return &MockTaskRepository{
+		Tasks:         make(map[uint]*model.Task),
+		TasksByUserID: make(map[uint][]*model.Task),
+		NextID:        1,
+	}
+}
+
+// Create は新しいタスクをメモリに保存します。
+func (r *MockTaskRepository) Create(ctx context.Context, task *model.Task) error {
+	if r.CreateFunc != nil {
+		return r.CreateFunc(ctx, task)
+	}
+
+	task.ID = r.NextID
+	r.NextID++
+	task.CreatedAt = time.Now()
+	task.UpdatedAt = time.Now()
+
+	r.Tasks[task.ID] = task
+	r.TasksByUserID[task.UserID] = append(r.TasksByUserID[task.UserID], task)
+
+	return nil
+}
+
+// GetByID はIDでタスクを検索します。
+func (r *MockTaskRepository) GetByID(ctx context.Context, id uint) (*model.Task, error) {
+	if r.GetByIDFunc != nil {
+		return r.GetByIDFunc(ctx, id)
+	}
+
+	if task, ok := r.Tasks[id]; ok {
+		return task, nil
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+// GetByUserID はユーザーIDで全タスクを取得します。
+func (r *MockTaskRepository) GetByUserID(ctx context.Context, userID uint) ([]model.Task, error) {
+	if r.GetByUserIDFunc != nil {
+		return r.GetByUserIDFunc(ctx, userID)
+	}
+
+	tasks := r.TasksByUserID[userID]
+	result := make([]model.Task, len(tasks))
+	for i, t := range tasks {
+		result[i] = *t
+	}
+	return result, nil
+}
+
+// GetByUserIDAndStatus はユーザーIDとステータスでタスクを取得します。
+func (r *MockTaskRepository) GetByUserIDAndStatus(ctx context.Context, userID uint, status string) ([]model.Task, error) {
+	if r.GetByUserIDAndStatusFunc != nil {
+		return r.GetByUserIDAndStatusFunc(ctx, userID, status)
+	}
+
+	var result []model.Task
+	for _, t := range r.TasksByUserID[userID] {
+		if t.Status == status {
+			result = append(result, *t)
+		}
+	}
+	return result, nil
+}
+
+// GetTodayTasks は今日が期限のタスクを取得します。
+func (r *MockTaskRepository) GetTodayTasks(ctx context.Context, userID uint) ([]model.Task, error) {
+	today := time.Now().Truncate(24 * time.Hour)
+	tomorrow := today.Add(24 * time.Hour)
+
+	var result []model.Task
+	for _, t := range r.TasksByUserID[userID] {
+		if t.Status == "pending" && !t.DueDate.Before(today) && t.DueDate.Before(tomorrow) {
+			result = append(result, *t)
+		}
+	}
+	return result, nil
+}
+
+// GetOverdueTasks は期限切れのタスクを取得します。
+func (r *MockTaskRepository) GetOverdueTasks(ctx context.Context, userID uint) ([]model.Task, error) {
+	today := time.Now().Truncate(24 * time.Hour)
+
+	var result []model.Task
+	for _, t := range r.TasksByUserID[userID] {
+		if t.Status == "pending" && t.DueDate.Before(today) {
+			result = append(result, *t)
+		}
+	}
+	return result, nil
+}
+
+// Update はタスクを更新します。
+func (r *MockTaskRepository) Update(ctx context.Context, task *model.Task) error {
+	if r.UpdateFunc != nil {
+		return r.UpdateFunc(ctx, task)
+	}
+
+	task.UpdatedAt = time.Now()
+	r.Tasks[task.ID] = task
+	return nil
+}
+
+// Delete はタスクを削除します。
+func (r *MockTaskRepository) Delete(ctx context.Context, id uint) error {
+	if r.DeleteFunc != nil {
+		return r.DeleteFunc(ctx, id)
+	}
+
+	if task, ok := r.Tasks[id]; ok {
+		// TasksByUserIDからも削除
+		userTasks := r.TasksByUserID[task.UserID]
+		for i, t := range userTasks {
+			if t.ID == id {
+				r.TasksByUserID[task.UserID] = append(userTasks[:i], userTasks[i+1:]...)
+				break
+			}
+		}
+		delete(r.Tasks, id)
+	}
+	return nil
+}
+
+// =============================================================================
 // MockRepositories - 全モックを束ねるファサード
 // =============================================================================
 
@@ -288,6 +439,7 @@ type MockRepositories struct {
 	plantRepo          *MockPlantRepository
 	careLogRepo        *MockCareLogRepository
 	tokenBlacklistRepo *MockTokenBlacklistRepository
+	taskRepo           *MockTaskRepository
 }
 
 // NewMockRepositories は新しいMockRepositoriesを作成します。
@@ -299,6 +451,7 @@ func NewMockRepositories() *MockRepositories {
 		plantRepo:          &MockPlantRepository{},
 		careLogRepo:        &MockCareLogRepository{},
 		tokenBlacklistRepo: NewMockTokenBlacklistRepository(),
+		taskRepo:           NewMockTaskRepository(),
 	}
 }
 
@@ -326,6 +479,11 @@ func (m *MockRepositories) CareLog() CareLogRepository {
 // TokenBlacklist は TokenBlacklistRepository インターフェースを返します。
 func (m *MockRepositories) TokenBlacklist() TokenBlacklistRepository {
 	return m.tokenBlacklistRepo
+}
+
+// Task は TaskRepository インターフェースを返します。
+func (m *MockRepositories) Task() TaskRepository {
+	return m.taskRepo
 }
 
 // WithTransaction はトランザクション処理をシミュレートします。
@@ -367,4 +525,10 @@ func (m *MockRepositories) GetMockUserRepository() *MockUserRepository {
 // トークンがブラックリストに登録されたか確認するテストで使用します。
 func (m *MockRepositories) GetMockTokenBlacklistRepository() *MockTokenBlacklistRepository {
 	return m.tokenBlacklistRepo
+}
+
+// GetMockTaskRepository はテスト用に内部のタスクモックを返します。
+// タスクのテストデータセットアップやカスタム動作注入に使用します。
+func (m *MockRepositories) GetMockTaskRepository() *MockTaskRepository {
+	return m.taskRepo
 }

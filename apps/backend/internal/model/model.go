@@ -69,6 +69,21 @@ type TokenBlacklist struct {
 	ExpiresAt time.Time `gorm:"not null;index" json:"expires_at"`
 }
 
+// Task represents a to-do task for gardening activities
+type Task struct {
+	BaseModel
+	UserID      uint       `gorm:"index;not null" json:"user_id"`
+	PlantID     *uint      `gorm:"index" json:"plant_id,omitempty"` // Optional: link to specific plant
+	Title       string     `gorm:"size:200;not null" json:"title"`
+	Description string     `gorm:"size:1000" json:"description,omitempty"`
+	DueDate     time.Time  `gorm:"index;not null" json:"due_date"`
+	Priority    string     `gorm:"size:20;default:'medium'" json:"priority"` // low, medium, high
+	Status      string     `gorm:"size:20;default:'pending'" json:"status"`  // pending, completed, cancelled
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	User        User       `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Plant       *Plant     `gorm:"foreignKey:PlantID" json:"plant,omitempty"`
+}
+
 // TableName overrides the table name for User
 func (User) TableName() string {
 	return "users"
@@ -92,4 +107,9 @@ func (CareLog) TableName() string {
 // TableName overrides the table name for TokenBlacklist
 func (TokenBlacklist) TableName() string {
 	return "token_blacklist"
+}
+
+// TableName overrides the table name for Task
+func (Task) TableName() string {
+	return "tasks"
 }

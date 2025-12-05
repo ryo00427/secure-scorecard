@@ -125,7 +125,7 @@
 
 ## 5. バックエンド - AuthService実装
 
-- [ ] 5.1 AuthService - ユーザー登録機能
+- [x] 5.1 AuthService - ユーザー登録機能
   - `POST /api/auth/register` エンドポイント実装
   - メールアドレス・パスワードバリデーション（RFC 5322、最小8文字）
   - パスワードハッシュ化（bcrypt, cost 12）
@@ -134,7 +134,7 @@
   - 重複メールアドレスチェック（409エラー）
   - _Requirements: 6.1, 6.4_
 
-- [ ] 5.2 AuthService - ログイン機能
+- [x] 5.2 AuthService - ログイン機能
   - `POST /api/auth/login` エンドポイント実装
   - メールアドレス・パスワード検証
   - bcryptでパスワード照合
@@ -143,7 +143,7 @@
   - 成功時にJWT発行とCookie設定
   - _Requirements: 6.2, 6.4, 6.6_
 
-- [ ] 5.3 (P) AuthService - ログアウトと認証状態確認
+- [x] 5.3 (P) AuthService - ログアウトと認証状態確認
   - `POST /api/auth/logout` エンドポイント実装（Cookie削除）
   - `GET /api/auth/me` エンドポイント実装（現在のユーザー情報返却）
   - JWT検証ミドルウェア適用
@@ -158,7 +158,7 @@
   - トークンハッシュ生成処理実装（crypto/sha256使用）
   - _Requirements: 6.5, 6.6_
 
-- [ ] 5.5* AuthService - ユニットテスト
+- [x] 5.5* AuthService - ユニットテスト
   - register正常系テスト（トークン発行確認）
   - register異常系テスト（重複メール、弱いパスワード）
   - login正常系テスト（JWT発行確認）

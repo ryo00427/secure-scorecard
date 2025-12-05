@@ -51,6 +51,18 @@ type TokenBlacklistRepository interface {
 	DeleteExpired(ctx context.Context) error
 }
 
+// TaskRepository defines the interface for task data access
+type TaskRepository interface {
+	Create(ctx context.Context, task *model.Task) error
+	GetByID(ctx context.Context, id uint) (*model.Task, error)
+	GetByUserID(ctx context.Context, userID uint) ([]model.Task, error)
+	GetByUserIDAndStatus(ctx context.Context, userID uint, status string) ([]model.Task, error)
+	GetTodayTasks(ctx context.Context, userID uint) ([]model.Task, error)
+	GetOverdueTasks(ctx context.Context, userID uint) ([]model.Task, error)
+	Update(ctx context.Context, task *model.Task) error
+	Delete(ctx context.Context, id uint) error
+}
+
 // Repositories aggregates all repository interfaces
 type Repositories interface {
 	User() UserRepository
@@ -58,6 +70,7 @@ type Repositories interface {
 	Plant() PlantRepository
 	CareLog() CareLogRepository
 	TokenBlacklist() TokenBlacklistRepository
+	Task() TaskRepository
 
 	// Transaction support
 	WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error
