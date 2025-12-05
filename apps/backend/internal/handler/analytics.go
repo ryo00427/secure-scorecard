@@ -5,6 +5,7 @@
 // エンドポイント:
 //   - GET /api/v1/analytics/harvest - 収穫量集計取得
 //   - GET /api/v1/analytics/charts/:type - グラフデータ取得
+//   - GET /api/v1/analytics/export/:dataType - CSVエクスポート
 package handler
 
 import (
@@ -167,4 +168,55 @@ func (h *Handler) GetChartData(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, chartData)
+}
+
+// ExportCSV はデータをCSV形式でエクスポートします。
+// データ種類に応じたCSVファイルまたはZIPファイルをダウンロードとして返します。
+//
+// パスパラメータ:
+//   - dataType: エクスポートするデータ種類（crops, harvests, tasks, all）
+//
+// レスポンス:
+//   - 200: CSV/ZIPファイル（Content-Disposition: attachment）
+//   - 400: 不正なデータ種類
+//   - 401: 認証エラー
+//   - 500: 内部エラー
+func (h *Handler) ExportCSV(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// 認証済みユーザーIDを取得
+	userID := auth.GetUserIDFromContext(c)
+	if userID == 0 {
+		return apperrors.NewAuthenticationError("Not authenticated")
+	}
+
+	// データ種類を取得
+	dataTypeStr := c.Param("dataType")
+	if dataTypeStr == "" {
+		return apperrors.NewBadRequestError("Data type is required")
+	}
+
+	// データ種類をバリデーション
+	dataType := service.ExportDataType(dataTypeStr)
+	validTypes := map[service.ExportDataType]bool{
+		service.ExportDataTypeCrops:    true,
+		service.ExportDataTypeHarvests: true,
+		service.ExportDataTypeTasks:    true,
+		service.ExportDataTypeAll:      true,
+	}
+	if !validTypes[dataType] {
+		return apperrors.NewBadRequestError("Invalid data type. Valid types: crops, harvests, tasks, all")
+	}
+
+	// CSVをエクスポート
+	result, err := h.service.ExportCSV(ctx, userID, dataType)
+	if err != nil {
+		return apperrors.NewInternalError("Failed to export CSV")
+	}
+
+	// レスポンスヘッダーを設定
+	c.Response().Header().Set("Content-Disposition", "attachment; filename=\""+result.FileName+"\"")
+	c.Response().Header().Set("Content-Type", result.ContentType)
+
+	return c.Blob(http.StatusOK, result.ContentType, result.Data)
 }

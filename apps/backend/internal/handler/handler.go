@@ -125,6 +125,7 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	// Analytics endpoints (protected)
 	// 分析データエンドポイント - 収穫量・成長データなどの集計・分析
 	analytics := protected.Group("/analytics")
-	analytics.GET("/harvest", h.GetHarvestSummary)   // 収穫量集計取得
-	analytics.GET("/charts/:type", h.GetChartData)   // グラフデータ取得（月別、作物別、区画別）
+	analytics.GET("/harvest", h.GetHarvestSummary)         // 収穫量集計取得
+	analytics.GET("/charts/:type", h.GetChartData)         // グラフデータ取得（月別、作物別、区画別）
+	analytics.GET("/export/:dataType", h.ExportCSV)        // CSVエクスポート（作物、収穫、タスク、全部）
 }

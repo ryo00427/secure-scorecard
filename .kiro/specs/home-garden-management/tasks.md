@@ -289,7 +289,7 @@
   - フロントエンド用ChartDataフォーマット変換
   - _Requirements: 4.2, 4.4_
 
-- [ ] 9.3 (P) AnalyticsService - CSVエクスポート機能
+- [x] 9.3 (P) AnalyticsService - CSVエクスポート機能
   - `GET /api/analytics/export/:dataType` CSVエクスポートエンドポイント
   - データタイプ別エクスポート（Crops, Harvests, Tasks, All）
   - CSV生成処理（encoding/csv使用）
