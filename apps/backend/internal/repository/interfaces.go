@@ -94,6 +94,30 @@ type HarvestRepository interface {
 	DeleteByCropID(ctx context.Context, cropID uint) error
 }
 
+// PlotRepository defines the interface for plot data access
+// 菜園の区画を管理します（グリッドレイアウト対応）
+type PlotRepository interface {
+	Create(ctx context.Context, plot *model.Plot) error
+	GetByID(ctx context.Context, id uint) (*model.Plot, error)
+	GetByUserID(ctx context.Context, userID uint) ([]model.Plot, error)
+	GetByUserIDAndStatus(ctx context.Context, userID uint, status string) ([]model.Plot, error)
+	Update(ctx context.Context, plot *model.Plot) error
+	Delete(ctx context.Context, id uint) error
+}
+
+// PlotAssignmentRepository defines the interface for plot assignment data access
+// 区画への作物配置を管理します（履歴追跡対応）
+type PlotAssignmentRepository interface {
+	Create(ctx context.Context, assignment *model.PlotAssignment) error
+	GetByID(ctx context.Context, id uint) (*model.PlotAssignment, error)
+	GetByPlotID(ctx context.Context, plotID uint) ([]model.PlotAssignment, error)
+	GetActiveByPlotID(ctx context.Context, plotID uint) (*model.PlotAssignment, error) // 現在アクティブな配置
+	GetByCropID(ctx context.Context, cropID uint) ([]model.PlotAssignment, error)
+	Update(ctx context.Context, assignment *model.PlotAssignment) error
+	Delete(ctx context.Context, id uint) error
+	DeleteByPlotID(ctx context.Context, plotID uint) error
+}
+
 // Repositories aggregates all repository interfaces
 type Repositories interface {
 	User() UserRepository
@@ -105,6 +129,8 @@ type Repositories interface {
 	Crop() CropRepository
 	GrowthRecord() GrowthRecordRepository
 	Harvest() HarvestRepository
+	Plot() PlotRepository
+	PlotAssignment() PlotAssignmentRepository
 
 	// Transaction support
 	WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error

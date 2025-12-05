@@ -35,6 +35,8 @@ type repositoryManager struct {
 	crop           *cropRepository
 	growthRecord   *growthRecordRepository
 	harvest        *harvestRepository
+	plot           *plotRepository
+	plotAssignment *plotAssignmentRepository
 }
 
 // NewRepositoryManager creates a new repository manager
@@ -50,6 +52,8 @@ func NewRepositoryManager(db *gorm.DB) Repositories {
 		crop:           &cropRepository{db: db},
 		growthRecord:   &growthRecordRepository{db: db},
 		harvest:        &harvestRepository{db: db},
+		plot:           &plotRepository{db: db},
+		plotAssignment: &plotAssignmentRepository{db: db},
 	}
 }
 
@@ -96,6 +100,16 @@ func (m *repositoryManager) GrowthRecord() GrowthRecordRepository {
 // Harvest returns the harvest repository
 func (m *repositoryManager) Harvest() HarvestRepository {
 	return m.harvest
+}
+
+// Plot returns the plot repository
+func (m *repositoryManager) Plot() PlotRepository {
+	return m.plot
+}
+
+// PlotAssignment returns the plot assignment repository
+func (m *repositoryManager) PlotAssignment() PlotAssignmentRepository {
+	return m.plotAssignment
 }
 
 // WithTransaction executes a function within a database transaction
