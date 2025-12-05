@@ -424,6 +424,291 @@ func (r *MockTaskRepository) Delete(ctx context.Context, id uint) error {
 }
 
 // =============================================================================
+// MockCropRepository - 作物リポジトリのモック実装
+// =============================================================================
+
+// MockCropRepository は CropRepository インターフェースのモック実装です。
+// 作物管理機能のテストに使用します。
+type MockCropRepository struct {
+	// Crops はIDをキーとした作物の格納Map
+	Crops map[uint]*model.Crop
+
+	// CropsByUserID はユーザーIDをキーとした作物リストの格納Map
+	CropsByUserID map[uint][]*model.Crop
+
+	// NextID は次に割り当てるID
+	NextID uint
+
+	// カスタム動作用のフック関数
+	CreateFunc             func(ctx context.Context, crop *model.Crop) error
+	GetByIDFunc            func(ctx context.Context, id uint) (*model.Crop, error)
+	GetByUserIDFunc        func(ctx context.Context, userID uint) ([]model.Crop, error)
+	GetByUserIDAndStatusFunc func(ctx context.Context, userID uint, status string) ([]model.Crop, error)
+	UpdateFunc             func(ctx context.Context, crop *model.Crop) error
+	DeleteFunc             func(ctx context.Context, id uint) error
+}
+
+// NewMockCropRepository は新しいMockCropRepositoryを作成します。
+func NewMockCropRepository() *MockCropRepository {
+	return &MockCropRepository{
+		Crops:         make(map[uint]*model.Crop),
+		CropsByUserID: make(map[uint][]*model.Crop),
+		NextID:        1,
+	}
+}
+
+// Create は新しい作物をメモリに保存します。
+func (r *MockCropRepository) Create(ctx context.Context, crop *model.Crop) error {
+	if r.CreateFunc != nil {
+		return r.CreateFunc(ctx, crop)
+	}
+
+	crop.ID = r.NextID
+	r.NextID++
+	crop.CreatedAt = time.Now()
+	crop.UpdatedAt = time.Now()
+
+	r.Crops[crop.ID] = crop
+	r.CropsByUserID[crop.UserID] = append(r.CropsByUserID[crop.UserID], crop)
+
+	return nil
+}
+
+// GetByID はIDで作物を検索します。
+func (r *MockCropRepository) GetByID(ctx context.Context, id uint) (*model.Crop, error) {
+	if r.GetByIDFunc != nil {
+		return r.GetByIDFunc(ctx, id)
+	}
+
+	if crop, ok := r.Crops[id]; ok {
+		return crop, nil
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+// GetByUserID はユーザーIDで全作物を取得します。
+func (r *MockCropRepository) GetByUserID(ctx context.Context, userID uint) ([]model.Crop, error) {
+	if r.GetByUserIDFunc != nil {
+		return r.GetByUserIDFunc(ctx, userID)
+	}
+
+	crops := r.CropsByUserID[userID]
+	result := make([]model.Crop, len(crops))
+	for i, c := range crops {
+		result[i] = *c
+	}
+	return result, nil
+}
+
+// GetByUserIDAndStatus はユーザーIDとステータスで作物を取得します。
+func (r *MockCropRepository) GetByUserIDAndStatus(ctx context.Context, userID uint, status string) ([]model.Crop, error) {
+	if r.GetByUserIDAndStatusFunc != nil {
+		return r.GetByUserIDAndStatusFunc(ctx, userID, status)
+	}
+
+	var result []model.Crop
+	for _, c := range r.CropsByUserID[userID] {
+		if c.Status == status {
+			result = append(result, *c)
+		}
+	}
+	return result, nil
+}
+
+// Update は作物を更新します。
+func (r *MockCropRepository) Update(ctx context.Context, crop *model.Crop) error {
+	if r.UpdateFunc != nil {
+		return r.UpdateFunc(ctx, crop)
+	}
+
+	crop.UpdatedAt = time.Now()
+	r.Crops[crop.ID] = crop
+	return nil
+}
+
+// Delete は作物を削除します。
+func (r *MockCropRepository) Delete(ctx context.Context, id uint) error {
+	if r.DeleteFunc != nil {
+		return r.DeleteFunc(ctx, id)
+	}
+
+	if crop, ok := r.Crops[id]; ok {
+		// CropsByUserIDからも削除
+		userCrops := r.CropsByUserID[crop.UserID]
+		for i, c := range userCrops {
+			if c.ID == id {
+				r.CropsByUserID[crop.UserID] = append(userCrops[:i], userCrops[i+1:]...)
+				break
+			}
+		}
+		delete(r.Crops, id)
+	}
+	return nil
+}
+
+// =============================================================================
+// MockGrowthRecordRepository - 成長記録リポジトリのモック実装
+// =============================================================================
+
+// MockGrowthRecordRepository は GrowthRecordRepository インターフェースのモック実装です。
+type MockGrowthRecordRepository struct {
+	// Records はIDをキーとした成長記録の格納Map
+	Records map[uint]*model.GrowthRecord
+
+	// RecordsByCropID は作物IDをキーとした成長記録リストの格納Map
+	RecordsByCropID map[uint][]*model.GrowthRecord
+
+	// NextID は次に割り当てるID
+	NextID uint
+}
+
+// NewMockGrowthRecordRepository は新しいMockGrowthRecordRepositoryを作成します。
+func NewMockGrowthRecordRepository() *MockGrowthRecordRepository {
+	return &MockGrowthRecordRepository{
+		Records:         make(map[uint]*model.GrowthRecord),
+		RecordsByCropID: make(map[uint][]*model.GrowthRecord),
+		NextID:          1,
+	}
+}
+
+// Create は新しい成長記録をメモリに保存します。
+func (r *MockGrowthRecordRepository) Create(ctx context.Context, record *model.GrowthRecord) error {
+	record.ID = r.NextID
+	r.NextID++
+	record.CreatedAt = time.Now()
+	record.UpdatedAt = time.Now()
+
+	r.Records[record.ID] = record
+	r.RecordsByCropID[record.CropID] = append(r.RecordsByCropID[record.CropID], record)
+
+	return nil
+}
+
+// GetByID はIDで成長記録を検索します。
+func (r *MockGrowthRecordRepository) GetByID(ctx context.Context, id uint) (*model.GrowthRecord, error) {
+	if record, ok := r.Records[id]; ok {
+		return record, nil
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+// GetByCropID は作物IDで全成長記録を取得します。
+func (r *MockGrowthRecordRepository) GetByCropID(ctx context.Context, cropID uint) ([]model.GrowthRecord, error) {
+	records := r.RecordsByCropID[cropID]
+	result := make([]model.GrowthRecord, len(records))
+	for i, rec := range records {
+		result[i] = *rec
+	}
+	return result, nil
+}
+
+// Delete は成長記録を削除します。
+func (r *MockGrowthRecordRepository) Delete(ctx context.Context, id uint) error {
+	if record, ok := r.Records[id]; ok {
+		// RecordsByCropIDからも削除
+		cropRecords := r.RecordsByCropID[record.CropID]
+		for i, rec := range cropRecords {
+			if rec.ID == id {
+				r.RecordsByCropID[record.CropID] = append(cropRecords[:i], cropRecords[i+1:]...)
+				break
+			}
+		}
+		delete(r.Records, id)
+	}
+	return nil
+}
+
+// DeleteByCropID は作物IDで全成長記録を削除します（バッチ削除）。
+func (r *MockGrowthRecordRepository) DeleteByCropID(ctx context.Context, cropID uint) error {
+	for _, record := range r.RecordsByCropID[cropID] {
+		delete(r.Records, record.ID)
+	}
+	delete(r.RecordsByCropID, cropID)
+	return nil
+}
+
+// =============================================================================
+// MockHarvestRepository - 収穫記録リポジトリのモック実装
+// =============================================================================
+
+// MockHarvestRepository は HarvestRepository インターフェースのモック実装です。
+type MockHarvestRepository struct {
+	// Harvests はIDをキーとした収穫記録の格納Map
+	Harvests map[uint]*model.Harvest
+
+	// HarvestsByCropID は作物IDをキーとした収穫記録リストの格納Map
+	HarvestsByCropID map[uint][]*model.Harvest
+
+	// NextID は次に割り当てるID
+	NextID uint
+}
+
+// NewMockHarvestRepository は新しいMockHarvestRepositoryを作成します。
+func NewMockHarvestRepository() *MockHarvestRepository {
+	return &MockHarvestRepository{
+		Harvests:         make(map[uint]*model.Harvest),
+		HarvestsByCropID: make(map[uint][]*model.Harvest),
+		NextID:           1,
+	}
+}
+
+// Create は新しい収穫記録をメモリに保存します。
+func (r *MockHarvestRepository) Create(ctx context.Context, harvest *model.Harvest) error {
+	harvest.ID = r.NextID
+	r.NextID++
+	harvest.CreatedAt = time.Now()
+	harvest.UpdatedAt = time.Now()
+
+	r.Harvests[harvest.ID] = harvest
+	r.HarvestsByCropID[harvest.CropID] = append(r.HarvestsByCropID[harvest.CropID], harvest)
+
+	return nil
+}
+
+// GetByID はIDで収穫記録を検索します。
+func (r *MockHarvestRepository) GetByID(ctx context.Context, id uint) (*model.Harvest, error) {
+	if harvest, ok := r.Harvests[id]; ok {
+		return harvest, nil
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+// GetByCropID は作物IDで全収穫記録を取得します。
+func (r *MockHarvestRepository) GetByCropID(ctx context.Context, cropID uint) ([]model.Harvest, error) {
+	harvests := r.HarvestsByCropID[cropID]
+	result := make([]model.Harvest, len(harvests))
+	for i, h := range harvests {
+		result[i] = *h
+	}
+	return result, nil
+}
+
+// Delete は収穫記録を削除します。
+func (r *MockHarvestRepository) Delete(ctx context.Context, id uint) error {
+	if harvest, ok := r.Harvests[id]; ok {
+		// HarvestsByCropIDからも削除
+		cropHarvests := r.HarvestsByCropID[harvest.CropID]
+		for i, h := range cropHarvests {
+			if h.ID == id {
+				r.HarvestsByCropID[harvest.CropID] = append(cropHarvests[:i], cropHarvests[i+1:]...)
+				break
+			}
+		}
+		delete(r.Harvests, id)
+	}
+	return nil
+}
+
+// DeleteByCropID は作物IDで全収穫記録を削除します（バッチ削除）。
+func (r *MockHarvestRepository) DeleteByCropID(ctx context.Context, cropID uint) error {
+	for _, harvest := range r.HarvestsByCropID[cropID] {
+		delete(r.Harvests, harvest.ID)
+	}
+	delete(r.HarvestsByCropID, cropID)
+	return nil
+}
+
+// =============================================================================
 // MockRepositories - 全モックを束ねるファサード
 // =============================================================================
 
@@ -440,6 +725,9 @@ type MockRepositories struct {
 	careLogRepo        *MockCareLogRepository
 	tokenBlacklistRepo *MockTokenBlacklistRepository
 	taskRepo           *MockTaskRepository
+	cropRepo           *MockCropRepository
+	growthRecordRepo   *MockGrowthRecordRepository
+	harvestRepo        *MockHarvestRepository
 }
 
 // NewMockRepositories は新しいMockRepositoriesを作成します。
@@ -452,6 +740,9 @@ func NewMockRepositories() *MockRepositories {
 		careLogRepo:        &MockCareLogRepository{},
 		tokenBlacklistRepo: NewMockTokenBlacklistRepository(),
 		taskRepo:           NewMockTaskRepository(),
+		cropRepo:           NewMockCropRepository(),
+		growthRecordRepo:   NewMockGrowthRecordRepository(),
+		harvestRepo:        NewMockHarvestRepository(),
 	}
 }
 
@@ -484,6 +775,21 @@ func (m *MockRepositories) TokenBlacklist() TokenBlacklistRepository {
 // Task は TaskRepository インターフェースを返します。
 func (m *MockRepositories) Task() TaskRepository {
 	return m.taskRepo
+}
+
+// Crop は CropRepository インターフェースを返します。
+func (m *MockRepositories) Crop() CropRepository {
+	return m.cropRepo
+}
+
+// GrowthRecord は GrowthRecordRepository インターフェースを返します。
+func (m *MockRepositories) GrowthRecord() GrowthRecordRepository {
+	return m.growthRecordRepo
+}
+
+// Harvest は HarvestRepository インターフェースを返します。
+func (m *MockRepositories) Harvest() HarvestRepository {
+	return m.harvestRepo
 }
 
 // WithTransaction はトランザクション処理をシミュレートします。
@@ -531,4 +837,20 @@ func (m *MockRepositories) GetMockTokenBlacklistRepository() *MockTokenBlacklist
 // タスクのテストデータセットアップやカスタム動作注入に使用します。
 func (m *MockRepositories) GetMockTaskRepository() *MockTaskRepository {
 	return m.taskRepo
+}
+
+// GetMockCropRepository はテスト用に内部の作物モックを返します。
+// 作物のテストデータセットアップやカスタム動作注入に使用します。
+func (m *MockRepositories) GetMockCropRepository() *MockCropRepository {
+	return m.cropRepo
+}
+
+// GetMockGrowthRecordRepository はテスト用に内部の成長記録モックを返します。
+func (m *MockRepositories) GetMockGrowthRecordRepository() *MockGrowthRecordRepository {
+	return m.growthRecordRepo
+}
+
+// GetMockHarvestRepository はテスト用に内部の収穫記録モックを返します。
+func (m *MockRepositories) GetMockHarvestRepository() *MockHarvestRepository {
+	return m.harvestRepo
 }

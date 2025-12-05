@@ -84,4 +84,23 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	tasks.PUT("/:id", h.UpdateTask)             // タスク更新
 	tasks.DELETE("/:id", h.DeleteTask)          // タスク削除
 	tasks.POST("/:id/complete", h.CompleteTask) // タスク完了
+
+	// Crop endpoints (protected)
+	// 作物管理エンドポイント - 作物の植え付けから収穫までのライフサイクル管理
+	crops := protected.Group("/crops")
+	crops.GET("", h.GetCrops)        // 全作物取得（statusクエリパラメータでフィルタ可能）
+	crops.POST("", h.CreateCrop)     // 新規作物登録
+	crops.GET("/:id", h.GetCrop)     // 特定作物取得
+	crops.PUT("/:id", h.UpdateCrop)  // 作物更新
+	crops.DELETE("/:id", h.DeleteCrop) // 作物削除
+
+	// Growth records endpoints (nested under crops)
+	// 成長記録エンドポイント - 作物の成長観察記録
+	crops.GET("/:id/growth-records", h.GetGrowthRecords)   // 成長記録一覧取得
+	crops.POST("/:id/growth-records", h.CreateGrowthRecord) // 成長記録追加
+
+	// Harvest endpoints (nested under crops)
+	// 収穫記録エンドポイント - 収穫量と品質の記録
+	crops.GET("/:id/harvests", h.GetHarvests)   // 収穫記録一覧取得
+	crops.POST("/:id/harvests", h.CreateHarvest) // 収穫記録追加
 }
