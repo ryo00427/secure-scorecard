@@ -275,7 +275,7 @@
 
 ## 9. バックエンド - AnalyticsService実装
 
-- [ ] 9.1 (P) AnalyticsService - 収穫量集計機能
+- [x] 9.1 (P) AnalyticsService - 収穫量集計機能
   - `GET /api/analytics/harvest` 収穫量集計エンドポイント
   - 作物ごとの総収穫量・平均成長期間を集計
   - フィルター対応（startDate, endDate, cropID）
