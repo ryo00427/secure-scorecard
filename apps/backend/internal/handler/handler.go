@@ -32,7 +32,9 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	// Auth endpoints (public)
 	authHandler := NewAuthHandler(h.service, h.jwtManager)
 	authGroup := api.Group("/auth")
+	authGroup.POST("/register", authHandler.Register)
 	authGroup.POST("/login", authHandler.Login)
+	authGroup.POST("/firebase-login", authHandler.FirebaseLogin)
 	authGroup.POST("/logout", authHandler.Logout)
 
 	// Protected auth endpoints

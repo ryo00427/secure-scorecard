@@ -2,10 +2,27 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/secure-scorecard/backend/internal/model"
 	"github.com/secure-scorecard/backend/internal/repository"
+)
+
+var (
+	// ErrEmailAlreadyExists is returned when trying to register with an existing email
+	ErrEmailAlreadyExists = errors.New("email already exists")
+	// ErrInvalidCredentials is returned when email or password is invalid
+	ErrInvalidCredentials = errors.New("invalid credentials")
+	// ErrAccountLocked is returned when account is temporarily locked
+	ErrAccountLocked = errors.New("account is locked")
+)
+
+const (
+	// MaxFailedLoginAttempts is the maximum number of failed login attempts before account lock
+	MaxFailedLoginAttempts = 3
+	// AccountLockDuration is the duration for which an account is locked
+	AccountLockDuration = 30 * time.Minute
 )
 
 // Service provides business logic
@@ -64,6 +81,66 @@ func (s *Service) GetOrCreateUser(ctx context.Context, firebaseUID, email, displ
 	})
 
 	return result, err
+}
+
+// RegisterUser creates a new user with email and password (with transaction)
+func (s *Service) RegisterUser(ctx context.Context, email, hashedPassword, displayName string) (*model.User, error) {
+	var result *model.User
+
+	err := s.repos.WithTransaction(ctx, func(txCtx context.Context) error {
+		// Check if email already exists
+		existingUser, err := s.repos.User().GetByEmail(txCtx, email)
+		if err == nil && existingUser != nil {
+			return ErrEmailAlreadyExists
+		}
+
+		// Create new user
+		newUser := &model.User{
+			Email:        email,
+			PasswordHash: hashedPassword,
+			DisplayName:  displayName,
+			IsActive:     true,
+		}
+
+		if err := s.repos.User().Create(txCtx, newUser); err != nil {
+			return err
+		}
+
+		result = newUser
+		return nil
+	})
+
+	return result, err
+}
+
+// GetUserByEmail retrieves a user by email
+func (s *Service) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	return s.repos.User().GetByEmail(ctx, email)
+}
+
+// IncrementFailedLogin increments failed login count and locks account if needed
+func (s *Service) IncrementFailedLogin(ctx context.Context, user *model.User) error {
+	user.FailedLoginCount++
+	if user.FailedLoginCount >= MaxFailedLoginAttempts {
+		lockUntil := time.Now().Add(AccountLockDuration)
+		user.LockedUntil = &lockUntil
+	}
+	return s.repos.User().Update(ctx, user)
+}
+
+// ResetFailedLogin resets the failed login count on successful login
+func (s *Service) ResetFailedLogin(ctx context.Context, user *model.User) error {
+	user.FailedLoginCount = 0
+	user.LockedUntil = nil
+	return s.repos.User().Update(ctx, user)
+}
+
+// IsAccountLocked checks if the account is currently locked
+func (s *Service) IsAccountLocked(user *model.User) bool {
+	if user.LockedUntil == nil {
+		return false
+	}
+	return time.Now().Before(*user.LockedUntil)
 }
 
 // --- Garden Service Methods ---

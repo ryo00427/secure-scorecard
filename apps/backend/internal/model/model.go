@@ -17,11 +17,14 @@ type BaseModel struct {
 // User represents a user in the system
 type User struct {
 	BaseModel
-	FirebaseUID string `gorm:"uniqueIndex;size:128" json:"firebase_uid"`
-	Email       string `gorm:"uniqueIndex;size:255" json:"email"`
-	DisplayName string `gorm:"size:100" json:"display_name"`
-	PhotoURL    string `gorm:"size:500" json:"photo_url,omitempty"`
-	IsActive    bool   `gorm:"default:true" json:"is_active"`
+	FirebaseUID      string     `gorm:"uniqueIndex;size:128" json:"firebase_uid,omitempty"`
+	Email            string     `gorm:"uniqueIndex;size:255;not null" json:"email"`
+	PasswordHash     string     `gorm:"size:255" json:"-"`
+	DisplayName      string     `gorm:"size:100" json:"display_name"`
+	PhotoURL         string     `gorm:"size:500" json:"photo_url,omitempty"`
+	IsActive         bool       `gorm:"default:true" json:"is_active"`
+	FailedLoginCount int        `gorm:"default:0" json:"-"`
+	LockedUntil      *time.Time `json:"-"`
 }
 
 // Garden represents a garden owned by a user
