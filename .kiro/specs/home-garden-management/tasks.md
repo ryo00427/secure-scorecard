@@ -267,7 +267,7 @@
   - 当日タスクの通知イベント発行
   - _Requirements: 3.5, 5.1, 5.5_
 
-- [ ] 8.4* TaskService - ユニットテスト
+- [x] 8.4* TaskService - ユニットテスト
   - createTask正常系テスト
   - completeTask正常系テスト（繰り返しタスク自動生成確認）
   - getOverdueTasks正常系テスト
