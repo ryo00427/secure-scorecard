@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -31,18 +30,6 @@ func createTestContext(method, path string, body string) (echo.Context, *httptes
 	e := echo.New()
 	e.Validator = validator.NewValidator()
 	req := httptest.NewRequest(method, path, strings.NewReader(body))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	return c, rec
-}
-
-// createTestContextWithContext creates an Echo context with context.Context for testing
-func createTestContextWithContext(method, path string, body string) (echo.Context, *httptest.ResponseRecorder) {
-	e := echo.New()
-	e.Validator = validator.NewValidator()
-	req := httptest.NewRequest(method, path, strings.NewReader(body))
-	req = req.WithContext(context.Background())
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
