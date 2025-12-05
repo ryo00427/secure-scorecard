@@ -893,3 +893,100 @@ func (s *Service) GetActivePlotAssignment(ctx context.Context, plotID uint) (*mo
 func (s *Service) GetCropAssignments(ctx context.Context, cropID uint) ([]model.PlotAssignment, error) {
 	return s.repos.PlotAssignment().GetByCropID(ctx, cropID)
 }
+
+// =============================================================================
+// Plot Layout & History Methods - 区画レイアウト・履歴メソッド
+// =============================================================================
+
+// PlotLayoutItem はレイアウト表示用の区画データです。
+// 区画情報と現在の配置情報を含みます。
+type PlotLayoutItem struct {
+	Plot             model.Plot            `json:"plot"`
+	ActiveAssignment *model.PlotAssignment `json:"active_assignment,omitempty"`
+	ActiveCrop       *model.Crop           `json:"active_crop,omitempty"`
+}
+
+// GetPlotLayout はユーザーの全区画のレイアウトデータを取得します。
+// グリッド表示用に、区画情報と現在の配置情報を含むデータを返します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//
+// 戻り値:
+//   - []PlotLayoutItem: レイアウトデータの一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetPlotLayout(ctx context.Context, userID uint) ([]PlotLayoutItem, error) {
+	// 全区画を取得
+	plots, err := s.repos.Plot().GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// レイアウトデータを構築
+	layoutItems := make([]PlotLayoutItem, len(plots))
+	for i, plot := range plots {
+		item := PlotLayoutItem{
+			Plot: plot,
+		}
+
+		// アクティブな配置を取得（エラーは無視 - 配置がない場合も正常）
+		assignment, err := s.repos.PlotAssignment().GetActiveByPlotID(ctx, plot.ID)
+		if err == nil && assignment != nil {
+			item.ActiveAssignment = assignment
+
+			// 配置されている作物を取得
+			crop, err := s.repos.Crop().GetByID(ctx, assignment.CropID)
+			if err == nil {
+				item.ActiveCrop = crop
+			}
+		}
+
+		layoutItems[i] = item
+	}
+
+	return layoutItems, nil
+}
+
+// PlotHistoryItem は区画履歴表示用のデータです。
+// 配置情報と作物情報を含みます。
+type PlotHistoryItem struct {
+	Assignment model.PlotAssignment `json:"assignment"`
+	Crop       *model.Crop          `json:"crop,omitempty"`
+}
+
+// GetPlotHistory は区画の栽培履歴を取得します。
+// 過去に配置された作物の履歴を返します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - plotID: 区画ID
+//
+// 戻り値:
+//   - []PlotHistoryItem: 履歴データの一覧（配置日の降順）
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetPlotHistory(ctx context.Context, plotID uint) ([]PlotHistoryItem, error) {
+	// 全配置履歴を取得
+	assignments, err := s.repos.PlotAssignment().GetByPlotID(ctx, plotID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 履歴データを構築
+	historyItems := make([]PlotHistoryItem, len(assignments))
+	for i, assignment := range assignments {
+		item := PlotHistoryItem{
+			Assignment: assignment,
+		}
+
+		// 作物情報を取得
+		crop, err := s.repos.Crop().GetByID(ctx, assignment.CropID)
+		if err == nil {
+			item.Crop = crop
+		}
+
+		historyItems[i] = item
+	}
+
+	return historyItems, nil
+}
