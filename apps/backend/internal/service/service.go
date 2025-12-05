@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sort"
 	"time"
 
 	"github.com/secure-scorecard/backend/internal/model"
@@ -1132,4 +1134,285 @@ func convertToKg(quantity float64, unit string) float64 {
 	default:
 		return quantity
 	}
+}
+
+// =============================================================================
+// Chart Data Types - グラフデータ型定義
+// =============================================================================
+// フロントエンドでのグラフ表示用のデータ構造を定義します。
+
+// ChartType はグラフデータの種類を表します。
+type ChartType string
+
+const (
+	// ChartTypeMonthlyHarvest は月別収穫量グラフ
+	ChartTypeMonthlyHarvest ChartType = "monthly_harvest"
+	// ChartTypeCropComparison は作物別収穫量比較グラフ
+	ChartTypeCropComparison ChartType = "crop_comparison"
+	// ChartTypePlotProductivity は区画生産性グラフ
+	ChartTypePlotProductivity ChartType = "plot_productivity"
+)
+
+// MonthlyHarvestData は月別収穫量のデータポイントを表します。
+type MonthlyHarvestData struct {
+	Year       int     `json:"year"`         // 年
+	Month      int     `json:"month"`        // 月（1-12）
+	MonthLabel string  `json:"month_label"`  // 月のラベル（例: "2024-01"）
+	TotalKg    float64 `json:"total_kg"`     // 月間総収穫量（kg）
+	Count      int     `json:"count"`        // 収穫回数
+}
+
+// CropComparisonData は作物別収穫量比較のデータポイントを表します。
+type CropComparisonData struct {
+	CropID       uint    `json:"crop_id"`
+	CropName     string  `json:"crop_name"`
+	TotalKg      float64 `json:"total_kg"`      // 総収穫量（kg）
+	HarvestCount int     `json:"harvest_count"` // 収穫回数
+	Percentage   float64 `json:"percentage"`    // 全体に対する割合（%）
+}
+
+// PlotProductivityData は区画生産性のデータポイントを表します。
+type PlotProductivityData struct {
+	PlotID       uint    `json:"plot_id"`
+	PlotName     string  `json:"plot_name"`
+	TotalKg      float64 `json:"total_kg"`      // 総収穫量（kg）
+	HarvestCount int     `json:"harvest_count"` // 収穫回数
+	CropsGrown   int     `json:"crops_grown"`   // 栽培した作物数
+	AreaM2       float64 `json:"area_m2"`       // 面積（m²）
+	KgPerM2      float64 `json:"kg_per_m2"`     // 面積あたり収穫量（kg/m²）
+}
+
+// ChartData はグラフ表示用のデータコンテナです。
+type ChartData struct {
+	ChartType    ChartType   `json:"chart_type"`
+	Title        string      `json:"title"`
+	Data         interface{} `json:"data"`
+	GeneratedAt  time.Time   `json:"generated_at"`
+}
+
+// ChartFilter はグラフデータのフィルタ条件を表します。
+type ChartFilter struct {
+	StartDate *time.Time `json:"start_date,omitempty"`
+	EndDate   *time.Time `json:"end_date,omitempty"`
+	Year      *int       `json:"year,omitempty"`
+}
+
+// =============================================================================
+// Chart Data Service Methods - グラフデータサービスメソッド
+// =============================================================================
+
+// GetChartData は指定された種類のグラフデータを取得します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//   - chartType: グラフの種類
+//   - filter: フィルタ条件
+//
+// 戻り値:
+//   - *ChartData: グラフデータ
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetChartData(ctx context.Context, userID uint, chartType ChartType, filter ChartFilter) (*ChartData, error) {
+	switch chartType {
+	case ChartTypeMonthlyHarvest:
+		return s.getMonthlyHarvestChart(ctx, userID, filter)
+	case ChartTypeCropComparison:
+		return s.getCropComparisonChart(ctx, userID, filter)
+	case ChartTypePlotProductivity:
+		return s.getPlotProductivityChart(ctx, userID, filter)
+	default:
+		return nil, fmt.Errorf("unknown chart type: %s", chartType)
+	}
+}
+
+// getMonthlyHarvestChart は月別収穫量グラフデータを生成します。
+func (s *Service) getMonthlyHarvestChart(ctx context.Context, userID uint, filter ChartFilter) (*ChartData, error) {
+	// 収穫データを取得
+	harvests, err := s.repos.Harvest().GetByUserIDWithDateRange(ctx, userID, filter.StartDate, filter.EndDate)
+	if err != nil {
+		return nil, err
+	}
+
+	// 月別に集計
+	monthlyData := make(map[string]*MonthlyHarvestData)
+	for _, harvest := range harvests {
+		year := harvest.HarvestDate.Year()
+		month := int(harvest.HarvestDate.Month())
+		key := fmt.Sprintf("%d-%02d", year, month)
+
+		if _, ok := monthlyData[key]; !ok {
+			monthlyData[key] = &MonthlyHarvestData{
+				Year:       year,
+				Month:      month,
+				MonthLabel: key,
+			}
+		}
+
+		monthlyData[key].TotalKg += convertToKg(harvest.Quantity, harvest.QuantityUnit)
+		monthlyData[key].Count++
+	}
+
+	// マップをスライスに変換してソート
+	var result []MonthlyHarvestData
+	for _, data := range monthlyData {
+		result = append(result, *data)
+	}
+	// 日付順にソート
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Year != result[j].Year {
+			return result[i].Year < result[j].Year
+		}
+		return result[i].Month < result[j].Month
+	})
+
+	return &ChartData{
+		ChartType:   ChartTypeMonthlyHarvest,
+		Title:       "月別収穫量",
+		Data:        result,
+		GeneratedAt: time.Now(),
+	}, nil
+}
+
+// getCropComparisonChart は作物別収穫量比較グラフデータを生成します。
+func (s *Service) getCropComparisonChart(ctx context.Context, userID uint, filter ChartFilter) (*ChartData, error) {
+	// 収穫データを取得
+	harvests, err := s.repos.Harvest().GetByUserIDWithDateRange(ctx, userID, filter.StartDate, filter.EndDate)
+	if err != nil {
+		return nil, err
+	}
+
+	// 作物情報キャッシュ
+	cropCache := make(map[uint]*model.Crop)
+
+	// 作物別に集計
+	cropData := make(map[uint]*CropComparisonData)
+	var totalKg float64
+
+	for _, harvest := range harvests {
+		// 作物情報を取得
+		crop, ok := cropCache[harvest.CropID]
+		if !ok {
+			crop, err = s.repos.Crop().GetByID(ctx, harvest.CropID)
+			if err != nil {
+				continue
+			}
+			cropCache[harvest.CropID] = crop
+		}
+
+		if _, ok := cropData[harvest.CropID]; !ok {
+			cropData[harvest.CropID] = &CropComparisonData{
+				CropID:   harvest.CropID,
+				CropName: crop.Name,
+			}
+		}
+
+		kg := convertToKg(harvest.Quantity, harvest.QuantityUnit)
+		cropData[harvest.CropID].TotalKg += kg
+		cropData[harvest.CropID].HarvestCount++
+		totalKg += kg
+	}
+
+	// 割合を計算してスライスに変換
+	var result []CropComparisonData
+	for _, data := range cropData {
+		if totalKg > 0 {
+			data.Percentage = (data.TotalKg / totalKg) * 100
+		}
+		result = append(result, *data)
+	}
+
+	// 収穫量順にソート（降順）
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].TotalKg > result[j].TotalKg
+	})
+
+	return &ChartData{
+		ChartType:   ChartTypeCropComparison,
+		Title:       "作物別収穫量比較",
+		Data:        result,
+		GeneratedAt: time.Now(),
+	}, nil
+}
+
+// getPlotProductivityChart は区画生産性グラフデータを生成します。
+func (s *Service) getPlotProductivityChart(ctx context.Context, userID uint, filter ChartFilter) (*ChartData, error) {
+	// ユーザーの全区画を取得
+	plots, err := s.repos.Plot().GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 収穫データを取得
+	harvests, err := s.repos.Harvest().GetByUserIDWithDateRange(ctx, userID, filter.StartDate, filter.EndDate)
+	if err != nil {
+		return nil, err
+	}
+
+	// 作物→区画のマッピングを構築
+	cropToPlot := make(map[uint]uint)
+	cropToPlotName := make(map[uint]string)
+	for _, plot := range plots {
+		assignments, err := s.repos.PlotAssignment().GetByPlotID(ctx, plot.ID)
+		if err != nil {
+			continue
+		}
+		for _, assignment := range assignments {
+			cropToPlot[assignment.CropID] = plot.ID
+			cropToPlotName[assignment.CropID] = plot.Name
+		}
+	}
+
+	// 区画別に集計
+	plotData := make(map[uint]*PlotProductivityData)
+	plotCrops := make(map[uint]map[uint]bool) // plotID -> cropID set
+
+	for _, plot := range plots {
+		area := float64(plot.Width) * float64(plot.Height)
+		plotData[plot.ID] = &PlotProductivityData{
+			PlotID:   plot.ID,
+			PlotName: plot.Name,
+			AreaM2:   area,
+		}
+		plotCrops[plot.ID] = make(map[uint]bool)
+	}
+
+	// 収穫データを区画別に集計
+	for _, harvest := range harvests {
+		plotID, ok := cropToPlot[harvest.CropID]
+		if !ok {
+			continue // 区画に配置されていない作物
+		}
+
+		data, ok := plotData[plotID]
+		if !ok {
+			continue
+		}
+
+		kg := convertToKg(harvest.Quantity, harvest.QuantityUnit)
+		data.TotalKg += kg
+		data.HarvestCount++
+		plotCrops[plotID][harvest.CropID] = true
+	}
+
+	// 栽培作物数と面積あたり収穫量を計算
+	var result []PlotProductivityData
+	for plotID, data := range plotData {
+		data.CropsGrown = len(plotCrops[plotID])
+		if data.AreaM2 > 0 {
+			data.KgPerM2 = data.TotalKg / data.AreaM2
+		}
+		result = append(result, *data)
+	}
+
+	// 面積あたり収穫量順にソート（降順）
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].KgPerM2 > result[j].KgPerM2
+	})
+
+	return &ChartData{
+		ChartType:   ChartTypePlotProductivity,
+		Title:       "区画生産性",
+		Data:        result,
+		GeneratedAt: time.Now(),
+	}, nil
 }
