@@ -38,7 +38,8 @@
       "Bash(go get:*)",
       "Bash(git commit:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(go test:*)"
     ],
     "deny": [],
     "ask": []
