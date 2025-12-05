@@ -240,3 +240,145 @@ func (s *Service) BlacklistToken(ctx context.Context, tokenHash string, expiresA
 func (s *Service) CleanupExpiredTokens(ctx context.Context) error {
 	return s.repos.TokenBlacklist().DeleteExpired(ctx)
 }
+
+// =============================================================================
+// Task Service Methods - タスク管理サービスメソッド
+// =============================================================================
+// タスク（やることリスト）のCRUD操作を提供します。
+// タスクは植物の世話リマインダーや一般的なガーデニング作業に使用されます。
+
+// CreateTask は新しいタスクを作成します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - task: 作成するタスク（UserID, Title, DueDateは必須）
+//
+// 戻り値:
+//   - error: 作成に失敗した場合のエラー
+func (s *Service) CreateTask(ctx context.Context, task *model.Task) error {
+	return s.repos.Task().Create(ctx, task)
+}
+
+// GetTaskByID はIDでタスクを取得します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - id: タスクID
+//
+// 戻り値:
+//   - *model.Task: 見つかったタスク
+//   - error: タスクが見つからない場合は gorm.ErrRecordNotFound
+func (s *Service) GetTaskByID(ctx context.Context, id uint) (*model.Task, error) {
+	return s.repos.Task().GetByID(ctx, id)
+}
+
+// GetUserTasks はユーザーの全タスクを取得します。
+// 期限日（DueDate）の昇順でソートされます。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//
+// 戻り値:
+//   - []model.Task: タスクの一覧（期限日順）
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetUserTasks(ctx context.Context, userID uint) ([]model.Task, error) {
+	return s.repos.Task().GetByUserID(ctx, userID)
+}
+
+// GetUserTasksByStatus はステータスでフィルタリングしたタスクを取得します。
+//
+// 有効なステータス:
+//   - "pending": 未完了
+//   - "completed": 完了済み
+//   - "cancelled": キャンセル
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//   - status: フィルタするステータス
+//
+// 戻り値:
+//   - []model.Task: 該当するタスクの一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetUserTasksByStatus(ctx context.Context, userID uint, status string) ([]model.Task, error) {
+	return s.repos.Task().GetByUserIDAndStatus(ctx, userID, status)
+}
+
+// GetTodayTasks は今日が期限のタスクを取得します。
+// ダッシュボードの「今日のタスク」表示に使用されます。
+// 優先度降順、期限日昇順でソートされます。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//
+// 戻り値:
+//   - []model.Task: 今日が期限の未完了タスク
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetTodayTasks(ctx context.Context, userID uint) ([]model.Task, error) {
+	return s.repos.Task().GetTodayTasks(ctx, userID)
+}
+
+// GetOverdueTasks は期限切れのタスクを取得します。
+// ダッシュボードの「期限切れ」アラート表示に使用されます。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//
+// 戻り値:
+//   - []model.Task: 期限が過ぎた未完了タスク
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetOverdueTasks(ctx context.Context, userID uint) ([]model.Task, error) {
+	return s.repos.Task().GetOverdueTasks(ctx, userID)
+}
+
+// UpdateTask はタスクを更新します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - task: 更新するタスク（IDは必須）
+//
+// 戻り値:
+//   - error: 更新に失敗した場合のエラー
+func (s *Service) UpdateTask(ctx context.Context, task *model.Task) error {
+	return s.repos.Task().Update(ctx, task)
+}
+
+// CompleteTask はタスクを完了としてマークします。
+// Status を "completed" に、CompletedAt を現在時刻に設定します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - taskID: 完了するタスクのID
+//
+// 戻り値:
+//   - error: タスクが見つからない、または更新に失敗した場合のエラー
+func (s *Service) CompleteTask(ctx context.Context, taskID uint) error {
+	// まずタスクを取得
+	task, err := s.repos.Task().GetByID(ctx, taskID)
+	if err != nil {
+		return err
+	}
+
+	// 完了状態に更新
+	now := time.Now()
+	task.Status = "completed"
+	task.CompletedAt = &now
+
+	return s.repos.Task().Update(ctx, task)
+}
+
+// DeleteTask はタスクを論理削除します。
+// GORMのソフトデリートにより、DeletedAtが設定されます。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - id: 削除するタスクのID
+//
+// 戻り値:
+//   - error: 削除に失敗した場合のエラー
+func (s *Service) DeleteTask(ctx context.Context, id uint) error {
+	return s.repos.Task().Delete(ctx, id)
+}

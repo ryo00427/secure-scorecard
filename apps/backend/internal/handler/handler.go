@@ -72,4 +72,16 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	// User endpoints (protected)
 	users := protected.Group("/users")
 	users.GET("/me", h.GetCurrentUser)
+
+	// Task endpoints (protected)
+	// タスク管理エンドポイント - やることリストのCRUD操作
+	tasks := protected.Group("/tasks")
+	tasks.GET("", h.GetTasks)                   // 全タスク取得（statusクエリパラメータでフィルタ可能）
+	tasks.GET("/today", h.GetTodayTasks)        // 今日のタスク取得
+	tasks.GET("/overdue", h.GetOverdueTasks)    // 期限切れタスク取得
+	tasks.POST("", h.CreateTask)                // 新規タスク作成
+	tasks.GET("/:id", h.GetTask)                // 特定タスク取得
+	tasks.PUT("/:id", h.UpdateTask)             // タスク更新
+	tasks.DELETE("/:id", h.DeleteTask)          // タスク削除
+	tasks.POST("/:id/complete", h.CompleteTask) // タスク完了
 }
