@@ -121,4 +121,9 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	plots.GET("/:id/assignments", h.GetPlotAssignments)   // 配置履歴取得
 	plots.GET("/:id/assignment", h.GetActivePlotAssignment) // アクティブな配置取得
 	plots.GET("/:id/history", h.GetPlotHistory) // 区画の栽培履歴取得（作物情報付き）
+
+	// Analytics endpoints (protected)
+	// 分析データエンドポイント - 収穫量・成長データなどの集計・分析
+	analytics := protected.Group("/analytics")
+	analytics.GET("/harvest", h.GetHarvestSummary) // 収穫量集計取得
 }

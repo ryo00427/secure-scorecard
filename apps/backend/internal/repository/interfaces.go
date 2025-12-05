@@ -90,6 +90,9 @@ type HarvestRepository interface {
 	Create(ctx context.Context, harvest *model.Harvest) error
 	GetByID(ctx context.Context, id uint) (*model.Harvest, error)
 	GetByCropID(ctx context.Context, cropID uint) ([]model.Harvest, error)
+	// GetByUserIDWithDateRange はユーザーの収穫記録を日付範囲でフィルタして取得します
+	// Analytics用。startDate/endDateがnilの場合は制限なし
+	GetByUserIDWithDateRange(ctx context.Context, userID uint, startDate, endDate *time.Time) ([]model.Harvest, error)
 	Delete(ctx context.Context, id uint) error
 	DeleteByCropID(ctx context.Context, cropID uint) error
 }
