@@ -20,7 +20,7 @@
 
 ## 2. AWS インフラストラクチャ（Terraform）
 
-- [ ] 2.1 (P) Terraform基盤とVPC構成
+- [x] 2.1 (P) Terraform基盤とVPC構成
   - Terraformプロジェクト初期化（infrastructure/ディレクトリ）
   - AWS Provider設定とバックエンド（S3 + DynamoDB）設定
   - VPC、サブネット（Public/Private）、Internet Gateway作成
@@ -28,7 +28,7 @@
   - NAT Gateway設定
   - _Requirements: 7.3, 7.7_
 
-- [ ] 2.2 RDS PostgreSQL構成
+- [x] 2.2 RDS PostgreSQL構成
   - RDS PostgreSQL 16.x インスタンス定義
   - Multi-AZ構成設定
   - データベース暗号化（AES-256）設定
@@ -36,7 +36,7 @@
   - Secrets ManagerでDB認証情報管理
   - _Requirements: 7.3, 7.7_
 
-- [ ] 2.3 (P) S3とCloudFront構成
+- [x] 2.3 (P) S3とCloudFront構成
   - S3バケット作成（画像保存用）
   - S3暗号化（SSE-S3）設定
   - CloudFront Distribution設定（画像CDN）
@@ -44,7 +44,7 @@
   - ライフサイクルポリシー設定
   - _Requirements: 7.3_
 
-- [ ] 2.4 (P) ECRとECS Fargate構成
+- [x] 2.4 (P) ECRとECS Fargate構成
   - ECRリポジトリ作成（backend用）
   - ECS Cluster作成
   - Task Definition定義（CPU, メモリ、環境変数）
@@ -52,7 +52,7 @@
   - ALB設定（ターゲットグループ、リスナー）
   - _Requirements: 7.4_
 
-- [ ] 2.5 (P) SNS/SES/DynamoDB構成
+- [x] 2.5 (P) SNS/SES/DynamoDB構成
   - SNS Topic作成（プッシュ通知用）
   - SNS Platform Application設定（FCM, APNS）
   - SES設定（メール通知用）
