@@ -2017,3 +2017,175 @@ func getCropIDs(crops []model.Crop) []uint {
 	}
 	return ids
 }
+
+// =============================================================================
+// Notification Service Methods - 通知サービスメソッド
+// =============================================================================
+// デバイストークン登録・管理と通知設定の更新を提供します。
+
+// RegisterDeviceToken はデバイストークンを登録または更新します。
+// 同じユーザー・プラットフォームの既存トークンがある場合は更新（upsert）します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//   - token: FCM/APNSトークン
+//   - platform: プラットフォーム（ios, android, web）
+//   - deviceID: デバイス識別子（オプション）
+//
+// 戻り値:
+//   - *model.DeviceToken: 登録されたトークン
+//   - error: 登録に失敗した場合のエラー
+func (s *Service) RegisterDeviceToken(ctx context.Context, userID uint, token, platform, deviceID string) (*model.DeviceToken, error) {
+	var result *model.DeviceToken
+
+	err := s.repos.WithTransaction(ctx, func(txCtx context.Context) error {
+		// 既存トークンをチェック（同じユーザー・プラットフォーム）
+		existingToken, err := s.repos.DeviceToken().GetByUserIDAndPlatform(txCtx, userID, platform)
+		if err == nil && existingToken != nil {
+			// 既存トークンを更新
+			existingToken.Token = token
+			existingToken.DeviceID = deviceID
+			existingToken.IsActive = true
+			if err := s.repos.DeviceToken().Update(txCtx, existingToken); err != nil {
+				return err
+			}
+			result = existingToken
+			return nil
+		}
+
+		// 新しいトークンを作成
+		newToken := &model.DeviceToken{
+			UserID:   userID,
+			Token:    token,
+			Platform: platform,
+			DeviceID: deviceID,
+			IsActive: true,
+		}
+
+		if err := s.repos.DeviceToken().Create(txCtx, newToken); err != nil {
+			return err
+		}
+
+		result = newToken
+		return nil
+	})
+
+	return result, err
+}
+
+// DeleteDeviceTokenByPlatform は特定プラットフォームのトークンを削除します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//   - platform: プラットフォーム（ios, android, web）
+//
+// 戻り値:
+//   - error: 削除に失敗した場合のエラー
+func (s *Service) DeleteDeviceTokenByPlatform(ctx context.Context, userID uint, platform string) error {
+	token, err := s.repos.DeviceToken().GetByUserIDAndPlatform(ctx, userID, platform)
+	if err != nil {
+		return err
+	}
+	return s.repos.DeviceToken().Delete(ctx, token.ID)
+}
+
+// DeleteAllDeviceTokens はユーザーの全デバイストークンを削除します。
+// ログアウト時やアカウント削除時に使用します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//
+// 戻り値:
+//   - error: 削除に失敗した場合のエラー
+func (s *Service) DeleteAllDeviceTokens(ctx context.Context, userID uint) error {
+	return s.repos.DeviceToken().DeleteByUserID(ctx, userID)
+}
+
+// GetActiveDeviceTokens はユーザーのアクティブなトークンを取得します。
+// 通知送信時に使用します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//
+// 戻り値:
+//   - []model.DeviceToken: アクティブなトークンの一覧
+//   - error: 取得に失敗した場合のエラー
+func (s *Service) GetActiveDeviceTokens(ctx context.Context, userID uint) ([]model.DeviceToken, error) {
+	return s.repos.DeviceToken().GetActiveByUserID(ctx, userID)
+}
+
+// UpdateNotificationSettings はユーザーの通知設定を更新します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - userID: ユーザーID
+//   - settings: 更新する通知設定
+//
+// 戻り値:
+//   - *model.NotificationSettings: 更新後の通知設定
+//   - error: 更新に失敗した場合のエラー
+func (s *Service) UpdateNotificationSettings(ctx context.Context, userID uint, settings *model.NotificationSettings) (*model.NotificationSettings, error) {
+	// ユーザーを取得
+	user, err := s.repos.User().GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 通知設定を更新
+	user.NotificationSettings = settings
+
+	if err := s.repos.User().Update(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return settings, nil
+}
+
+// =============================================================================
+// Notification Log Service Methods - 通知ログサービスメソッド
+// =============================================================================
+// 通知送信のログ管理と重複防止を提供します。
+
+// CreateNotificationLog は通知ログを作成します。
+// 重複防止キーを使用して、同じ通知が期間内に再送されないようにします。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - log: 通知ログ
+//
+// 戻り値:
+//   - error: 作成に失敗した場合のエラー
+func (s *Service) CreateNotificationLog(ctx context.Context, log *model.NotificationLog) error {
+	return s.repos.NotificationLog().Create(ctx, log)
+}
+
+// CheckDeduplication は重複防止キーで既存の通知ログをチェックします。
+// 24時間以内に同じキーで送信された通知があるかを確認します。
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - key: 重複防止キー
+//
+// 戻り値:
+//   - bool: 重複が見つかった場合はtrue
+//   - error: チェックに失敗した場合のエラー
+func (s *Service) CheckDeduplication(ctx context.Context, key string) (bool, error) {
+	log, err := s.repos.NotificationLog().GetByDeduplicationKey(ctx, key)
+	if err != nil {
+		return false, nil // エラーの場合は重複なしとみなす
+	}
+	return log != nil, nil
+}
+
+// CleanupExpiredNotificationLogs は期限切れの通知ログを削除します。
+// 定期的なクリーンアップジョブで使用します。
+//
+// 戻り値:
+//   - error: 削除に失敗した場合のエラー
+func (s *Service) CleanupExpiredNotificationLogs(ctx context.Context) error {
+	return s.repos.NotificationLog().DeleteExpired(ctx)
+}
