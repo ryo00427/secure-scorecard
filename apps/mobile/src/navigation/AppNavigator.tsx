@@ -19,6 +19,7 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import HomeScreen from '../screens/main/HomeScreen';
 import TasksScreen from '../screens/main/TasksScreen';
 import CropsScreen from '../screens/main/CropsScreen';
+import AnalyticsScreen from '../screens/main/AnalyticsScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
 
 // -----------------------------------------------------------------------------
@@ -36,6 +37,7 @@ export type MainTabParamList = {
   Home: undefined;
   Tasks: undefined;
   Crops: undefined;
+  Analytics: undefined;
   Settings: undefined;
 };
 
@@ -85,6 +87,9 @@ function MainTabNavigator() {
             case 'Crops':
               iconName = focused ? 'leaf' : 'leaf-outline';
               break;
+            case 'Analytics':
+              iconName = focused ? 'analytics' : 'analytics-outline';
+              break;
             case 'Settings':
               iconName = focused ? 'settings' : 'settings-outline';
               break;
@@ -117,6 +122,11 @@ function MainTabNavigator() {
         name="Crops"
         component={CropsScreen}
         options={{ title: '作物' }}
+      />
+      <Tab.Screen
+        name="Analytics"
+        component={AnalyticsScreen}
+        options={{ title: '分析' }}
       />
       <Tab.Screen
         name="Settings"
