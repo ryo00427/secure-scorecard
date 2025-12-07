@@ -59,6 +59,10 @@ type TaskRepository interface {
 	GetByUserIDAndStatus(ctx context.Context, userID uint, status string) ([]model.Task, error)
 	GetTodayTasks(ctx context.Context, userID uint) ([]model.Task, error)
 	GetOverdueTasks(ctx context.Context, userID uint) ([]model.Task, error)
+	// GetAllOverdueTasks はシステム全体の期限切れタスクを取得します（通知処理用）
+	GetAllOverdueTasks(ctx context.Context) ([]model.Task, error)
+	// GetAllTodayTasks はシステム全体の今日が期限のタスクを取得します（通知処理用）
+	GetAllTodayTasks(ctx context.Context) ([]model.Task, error)
 	Update(ctx context.Context, task *model.Task) error
 	Delete(ctx context.Context, id uint) error
 }
@@ -70,6 +74,8 @@ type CropRepository interface {
 	GetByID(ctx context.Context, id uint) (*model.Crop, error)
 	GetByUserID(ctx context.Context, userID uint) ([]model.Crop, error)
 	GetByUserIDAndStatus(ctx context.Context, userID uint, status string) ([]model.Crop, error)
+	// GetUpcomingHarvests は指定日数以内に収穫予定の作物を取得します（通知処理用）
+	GetUpcomingHarvests(ctx context.Context, daysAhead int) ([]model.Crop, error)
 	Update(ctx context.Context, crop *model.Crop) error
 	Delete(ctx context.Context, id uint) error
 }
@@ -121,6 +127,50 @@ type PlotAssignmentRepository interface {
 	DeleteByPlotID(ctx context.Context, plotID uint) error
 }
 
+// DeviceTokenRepository defines the interface for device token data access
+// プッシュ通知用のデバイストークンを管理します
+type DeviceTokenRepository interface {
+	// Create は新しいデバイストークンを登録します
+	Create(ctx context.Context, token *model.DeviceToken) error
+	// GetByID はIDでデバイストークンを取得します
+	GetByID(ctx context.Context, id uint) (*model.DeviceToken, error)
+	// GetByUserID はユーザーの全デバイストークンを取得します
+	GetByUserID(ctx context.Context, userID uint) ([]model.DeviceToken, error)
+	// GetByUserIDAndPlatform はユーザーとプラットフォームでトークンを取得します
+	GetByUserIDAndPlatform(ctx context.Context, userID uint, platform string) (*model.DeviceToken, error)
+	// GetByToken はトークン文字列でデバイストークンを取得します
+	GetByToken(ctx context.Context, token string) (*model.DeviceToken, error)
+	// GetActiveByUserID はユーザーのアクティブなトークンを取得します
+	GetActiveByUserID(ctx context.Context, userID uint) ([]model.DeviceToken, error)
+	// Update はデバイストークンを更新します
+	Update(ctx context.Context, token *model.DeviceToken) error
+	// Delete はデバイストークンを削除します
+	Delete(ctx context.Context, id uint) error
+	// DeleteByUserID はユーザーの全デバイストークンを削除します
+	DeleteByUserID(ctx context.Context, userID uint) error
+	// DeactivateToken はトークンを無効化します（無効トークン検出時）
+	DeactivateToken(ctx context.Context, id uint) error
+}
+
+// NotificationLogRepository defines the interface for notification log data access
+// 通知の送信ログを管理します（重複防止、配信追跡）
+type NotificationLogRepository interface {
+	// Create は新しい通知ログを作成します
+	Create(ctx context.Context, log *model.NotificationLog) error
+	// GetByID はIDで通知ログを取得します
+	GetByID(ctx context.Context, id uint) (*model.NotificationLog, error)
+	// GetByDeduplicationKey は重複防止キーで通知ログを取得します
+	GetByDeduplicationKey(ctx context.Context, key string) (*model.NotificationLog, error)
+	// GetByUserID はユーザーの通知ログを取得します
+	GetByUserID(ctx context.Context, userID uint, limit int) ([]model.NotificationLog, error)
+	// GetPendingNotifications は送信待ちの通知を取得します（リトライ用）
+	GetPendingNotifications(ctx context.Context, limit int) ([]model.NotificationLog, error)
+	// Update は通知ログを更新します
+	Update(ctx context.Context, log *model.NotificationLog) error
+	// DeleteExpired は期限切れの通知ログを削除します
+	DeleteExpired(ctx context.Context) error
+}
+
 // Repositories aggregates all repository interfaces
 type Repositories interface {
 	User() UserRepository
@@ -134,6 +184,8 @@ type Repositories interface {
 	Harvest() HarvestRepository
 	Plot() PlotRepository
 	PlotAssignment() PlotAssignmentRepository
+	DeviceToken() DeviceTokenRepository
+	NotificationLog() NotificationLogRepository
 
 	// Transaction support
 	WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error

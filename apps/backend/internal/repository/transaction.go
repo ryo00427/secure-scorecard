@@ -25,35 +25,39 @@ func ContextWithTx(ctx context.Context, tx *gorm.DB) context.Context {
 
 // repositoryManager implements Repositories interface with transaction support
 type repositoryManager struct {
-	db             *gorm.DB
-	user           *userRepository
-	garden         *gardenRepository
-	plant          *plantRepository
-	careLog        *careLogRepository
-	tokenBlacklist *tokenBlacklistRepository
-	task           *taskRepository
-	crop           *cropRepository
-	growthRecord   *growthRecordRepository
-	harvest        *harvestRepository
-	plot           *plotRepository
-	plotAssignment *plotAssignmentRepository
+	db              *gorm.DB
+	user            *userRepository
+	garden          *gardenRepository
+	plant           *plantRepository
+	careLog         *careLogRepository
+	tokenBlacklist  *tokenBlacklistRepository
+	task            *taskRepository
+	crop            *cropRepository
+	growthRecord    *growthRecordRepository
+	harvest         *harvestRepository
+	plot            *plotRepository
+	plotAssignment  *plotAssignmentRepository
+	deviceToken     *deviceTokenRepository
+	notificationLog *notificationLogRepository
 }
 
 // NewRepositoryManager creates a new repository manager
 func NewRepositoryManager(db *gorm.DB) Repositories {
 	return &repositoryManager{
-		db:             db,
-		user:           &userRepository{db: db},
-		garden:         &gardenRepository{db: db},
-		plant:          &plantRepository{db: db},
-		careLog:        &careLogRepository{db: db},
-		tokenBlacklist: &tokenBlacklistRepository{db: db},
-		task:           &taskRepository{db: db},
-		crop:           &cropRepository{db: db},
-		growthRecord:   &growthRecordRepository{db: db},
-		harvest:        &harvestRepository{db: db},
-		plot:           &plotRepository{db: db},
-		plotAssignment: &plotAssignmentRepository{db: db},
+		db:              db,
+		user:            &userRepository{db: db},
+		garden:          &gardenRepository{db: db},
+		plant:           &plantRepository{db: db},
+		careLog:         &careLogRepository{db: db},
+		tokenBlacklist:  &tokenBlacklistRepository{db: db},
+		task:            &taskRepository{db: db},
+		crop:            &cropRepository{db: db},
+		growthRecord:    &growthRecordRepository{db: db},
+		harvest:         &harvestRepository{db: db},
+		plot:            &plotRepository{db: db},
+		plotAssignment:  &plotAssignmentRepository{db: db},
+		deviceToken:     &deviceTokenRepository{db: db},
+		notificationLog: &notificationLogRepository{db: db},
 	}
 }
 
@@ -110,6 +114,16 @@ func (m *repositoryManager) Plot() PlotRepository {
 // PlotAssignment returns the plot assignment repository
 func (m *repositoryManager) PlotAssignment() PlotAssignmentRepository {
 	return m.plotAssignment
+}
+
+// DeviceToken returns the device token repository
+func (m *repositoryManager) DeviceToken() DeviceTokenRepository {
+	return m.deviceToken
+}
+
+// NotificationLog returns the notification log repository
+func (m *repositoryManager) NotificationLog() NotificationLogRepository {
+	return m.notificationLog
 }
 
 // WithTransaction executes a function within a database transaction
