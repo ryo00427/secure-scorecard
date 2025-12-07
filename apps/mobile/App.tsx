@@ -1,14 +1,45 @@
+// =============================================================================
+// App.tsx - アプリケーションエントリーポイント
+// =============================================================================
+// 認証コンテキストとReact Queryのプロバイダーを設定し、
+// ナビゲーションを初期化します。
+
 import './global.css';
 
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Text, View } from 'react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from './src/context/AuthContext';
+import AppNavigator from './src/navigation/AppNavigator';
+
+// -----------------------------------------------------------------------------
+// React Query Client - クエリクライアント
+// -----------------------------------------------------------------------------
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // デフォルトで5分間キャッシュを保持
+      staleTime: 5 * 60 * 1000,
+      // エラー時に3回リトライ
+      retry: 3,
+      // バックグラウンドからフォアグラウンドに戻った時に再フェッチ
+      refetchOnWindowFocus: true,
+    },
+  },
+});
+
+// -----------------------------------------------------------------------------
+// App - アプリケーションコンポーネント
+// -----------------------------------------------------------------------------
 
 export default function App() {
   return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-2xl font-bold text-primary-600">家庭菜園管理アプリ</Text>
-      <Text className="mt-2 text-gray-500">Home Garden Management</Text>
-      <StatusBar style="auto" />
-    </View>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <StatusBar style="auto" />
+        <AppNavigator />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
