@@ -10,17 +10,27 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	Server    ServerConfig
-	Database  DatabaseConfig
-	JWT       JWTConfig
-	CORS      CORSConfig
-	S3        S3Config
-	Scheduler SchedulerConfig
+	Server       ServerConfig
+	Database     DatabaseConfig
+	JWT          JWTConfig
+	CORS         CORSConfig
+	S3           S3Config
+	Scheduler    SchedulerConfig
+	Notification NotificationConfig
 }
 
 // SchedulerConfig はスケジューラー関連の設定を保持します
 type SchedulerConfig struct {
 	AuthToken string // EventBridge Scheduler からの認証トークン
+}
+
+// NotificationConfig は通知サービスの設定を保持します
+type NotificationConfig struct {
+	AWSRegion        string // AWSリージョン（SNS/SES用）
+	SNSPlatformARN   string // SNS Platform Application ARN（プッシュ通知用）
+	SESFromEmail     string // SES送信元メールアドレス
+	MaxRetries       int    // 最大リトライ回数
+	InitialBackoffMs int    // 初回リトライ待機時間(ms)
 }
 
 // S3Config はS3/CloudFront設定を保持します
@@ -96,6 +106,13 @@ func Load() (*Config, error) {
 		},
 		Scheduler: SchedulerConfig{
 			AuthToken: getEnv("SCHEDULER_AUTH_TOKEN", ""), // EventBridge用認証トークン
+		},
+		Notification: NotificationConfig{
+			AWSRegion:        getEnv("AWS_REGION", "ap-northeast-1"),
+			SNSPlatformARN:   getEnv("SNS_PLATFORM_ARN", ""),             // プッシュ通知用
+			SESFromEmail:     getEnv("SES_FROM_EMAIL", ""),               // メール送信元
+			MaxRetries:       getEnvAsInt("NOTIFICATION_MAX_RETRIES", 3), // デフォルト3回
+			InitialBackoffMs: getEnvAsInt("NOTIFICATION_INITIAL_BACKOFF_MS", 100),
 		},
 	}
 
