@@ -379,20 +379,19 @@
   - NativeWind（Tailwind for RN）設定
   - _Requirements: 7.1_
 
-- [ ] 12.2 (P) React Native Firebase統合
-  - @react-native-firebase/app インストール
-  - @react-native-firebase/messaging インストール
-  - Firebase設定ファイル追加（google-services.json, GoogleService-Info.plist）
-  - iOS: Xcode Push Notifications有効化、Background Modes設定
-  - Android: Firebase Console FCM設定
+- [x] 12.2 (P) React Native Expo Notifications統合
+  - expo-notifications, expo-device, expo-constants インストール
+  - notifications.ts サービス実装（Push Token取得、デバイス登録）
+  - NotificationContext.tsx コンテキスト実装
+  - Android通知チャンネル設定
   - デバイストークン取得・登録処理実装
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 12.3 プッシュ通知ハンドラー実装
-  - フォアグラウンド通知ハンドラー実装
-  - バックグラウンド通知ハンドラー実装（setBackgroundMessageHandler）
+- [x] 12.3 プッシュ通知ハンドラー実装
+  - フォアグラウンド通知ハンドラー実装（NotificationContext）
+  - 通知受信リスナー実装
   - 通知タップ時のナビゲーション処理
-  - 通知パーミッション取得（初回起動時）
+  - 通知パーミッション取得・管理
   - _Requirements: 5.1, 5.2, 5.3_
 
 - [x] 12.4 認証画面実装
@@ -411,17 +410,20 @@
   - 基本的なCRUD操作とReact Query統合
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.3, 3.1, 3.2, 3.3_
 
-- [ ] 12.6 分析画面実装
-  - ダッシュボード画面実装
-  - グラフコンポーネント実装（react-native-chart-kit等使用）
-  - 収穫量集計・グラフ表示
+- [x] 12.6 分析画面実装
+  - AnalyticsScreen.tsx 実装（収穫サマリー、グラフ、エクスポート）
+  - react-native-chart-kit, react-native-svg インストール
+  - BarChart/PieChart グラフ表示
   - CSVエクスポート機能実装（Share APIで共有）
+  - AppNavigatorに分析タブ追加
   - _Requirements: 4.1, 4.2, 4.4, 4.5_
 
-- [ ] 12.7* Mobile UIテスト
-  - 主要画面のレンダリングテスト（Jest + React Native Testing Library）
-  - ナビゲーションテスト
-  - プッシュ通知受信テスト（モック）
+- [x] 12.7* Mobile UIテスト
+  - HomeScreen.test.tsx - ホーム画面レンダリングテスト
+  - AnalyticsScreen.test.tsx - 分析画面レンダリングテスト
+  - NotificationContext.test.tsx - 通知コンテキストテスト
+  - AppNavigator.test.tsx - ナビゲーションテスト
+  - jest.setup.js にExpo/chart-kit モック追加
   - _Requirements: 1.1, 5.1, 6.1_
 
 ## 14. 統合テスト

@@ -44,8 +44,8 @@ export class ApiError extends Error {
 // -----------------------------------------------------------------------------
 
 // 共通のリクエストヘッダーを取得
-async function getHeaders(): Promise<HeadersInit> {
-  const headers: HeadersInit = {
+async function getHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
@@ -124,6 +124,14 @@ export async function del<T>(endpoint: string): Promise<T> {
   });
   return handleResponse<T>(response);
 }
+
+// API オブジェクト（通知サービスなど外部で使用）
+export const api = {
+  get,
+  post,
+  put,
+  delete: del,
+};
 
 // -----------------------------------------------------------------------------
 // Auth API - 認証 API
@@ -258,3 +266,64 @@ export const notificationApi = {
     growth_record_notifications?: boolean;
   }) => put<{ message: string }>('/users/settings/notifications', settings),
 };
+
+// -----------------------------------------------------------------------------
+// Analytics API - 分析 API
+// -----------------------------------------------------------------------------
+
+// 収穫サマリー
+interface HarvestSummary {
+  crop_id: number;
+  crop_name: string;
+  total_quantity: number;
+  average_growth_days: number;
+  harvest_count: number;
+}
+
+// グラフデータポイント
+interface ChartDataPoint {
+  label: string;
+  value: number;
+}
+
+// グラフデータ
+interface ChartData {
+  chart_type: string;
+  title: string;
+  data: ChartDataPoint[];
+}
+
+// CSVエクスポートレスポンス
+interface ExportResponse {
+  download_url: string;
+  expires_at: string;
+}
+
+export const analyticsApi = {
+  // 収穫サマリーを取得
+  getHarvestSummary: (params?: {
+    start_date?: string;
+    end_date?: string;
+    crop_id?: number;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.crop_id) queryParams.append('crop_id', params.crop_id.toString());
+    const query = queryParams.toString();
+    return get<{ summaries: HarvestSummary[] }>(
+      `/analytics/harvest-summary${query ? `?${query}` : ''}`
+    );
+  },
+
+  // グラフデータを取得
+  getChartData: (chartType: 'monthly_harvest' | 'crop_comparison' | 'plot_productivity') =>
+    get<ChartData>(`/analytics/charts/${chartType}`),
+
+  // CSVエクスポート
+  exportCSV: (dataType: 'crops' | 'harvests' | 'tasks' | 'all') =>
+    get<ExportResponse>(`/analytics/export/${dataType}`),
+};
+
+// 型エクスポート
+export type { HarvestSummary, ChartData, ChartDataPoint, ExportResponse };
