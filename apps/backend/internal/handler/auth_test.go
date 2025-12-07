@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -77,7 +78,7 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 		DisplayName:  "Existing User",
 		IsActive:     true,
 	}
-	mockRepos.GetMockUserRepository().Create(nil, existingUser)
+	mockRepos.GetMockUserRepository().Create(context.Background(), existingUser)
 
 	// Try to register with same email
 	body := `{"email": "existing@example.com", "password": "password123", "display_name": "New User"}`
@@ -159,7 +160,7 @@ func TestLogin_Success(t *testing.T) {
 		IsActive:         true,
 		FailedLoginCount: 0,
 	}
-	mockRepos.GetMockUserRepository().Create(nil, testUser)
+	mockRepos.GetMockUserRepository().Create(context.Background(), testUser)
 
 	// Login
 	body := `{"email": "test@example.com", "password": "password123"}`
@@ -197,7 +198,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 		IsActive:         true,
 		FailedLoginCount: 0,
 	}
-	mockRepos.GetMockUserRepository().Create(nil, testUser)
+	mockRepos.GetMockUserRepository().Create(context.Background(), testUser)
 
 	// Login with wrong password
 	body := `{"email": "test@example.com", "password": "wrongpassword"}`
@@ -253,7 +254,7 @@ func TestLogin_AccountLocked(t *testing.T) {
 		FailedLoginCount: 3,
 		LockedUntil:      &lockedUntil,
 	}
-	mockRepos.GetMockUserRepository().Create(nil, testUser)
+	mockRepos.GetMockUserRepository().Create(context.Background(), testUser)
 
 	// Try to login
 	body := `{"email": "locked@example.com", "password": "password123"}`
@@ -286,7 +287,7 @@ func TestLogin_FailedLoginIncrement(t *testing.T) {
 		IsActive:         true,
 		FailedLoginCount: 0,
 	}
-	mockRepos.GetMockUserRepository().Create(nil, testUser)
+	mockRepos.GetMockUserRepository().Create(context.Background(), testUser)
 
 	// Login with wrong password
 	body := `{"email": "test@example.com", "password": "wrongpassword"}`
@@ -295,7 +296,7 @@ func TestLogin_FailedLoginIncrement(t *testing.T) {
 	_ = handler.Login(c)
 
 	// Check that failed login count was incremented
-	user, _ := mockRepos.GetMockUserRepository().GetByEmail(nil, "test@example.com")
+	user, _ := mockRepos.GetMockUserRepository().GetByEmail(context.Background(), "test@example.com")
 	if user.FailedLoginCount != 1 {
 		t.Errorf("Expected failed login count 1, got %d", user.FailedLoginCount)
 	}
@@ -314,7 +315,7 @@ func TestLogin_AccountLockAfterThreeFailures(t *testing.T) {
 		IsActive:         true,
 		FailedLoginCount: 2, // Already 2 failed attempts
 	}
-	mockRepos.GetMockUserRepository().Create(nil, testUser)
+	mockRepos.GetMockUserRepository().Create(context.Background(), testUser)
 
 	// Third failed login attempt
 	body := `{"email": "test@example.com", "password": "wrongpassword"}`
@@ -323,7 +324,7 @@ func TestLogin_AccountLockAfterThreeFailures(t *testing.T) {
 	_ = handler.Login(c)
 
 	// Check that account is now locked
-	user, _ := mockRepos.GetMockUserRepository().GetByEmail(nil, "test@example.com")
+	user, _ := mockRepos.GetMockUserRepository().GetByEmail(context.Background(), "test@example.com")
 	if user.FailedLoginCount != 3 {
 		t.Errorf("Expected failed login count 3, got %d", user.FailedLoginCount)
 	}
@@ -345,7 +346,7 @@ func TestLogin_SuccessResetsFailedCount(t *testing.T) {
 		IsActive:         true,
 		FailedLoginCount: 2,
 	}
-	mockRepos.GetMockUserRepository().Create(nil, testUser)
+	mockRepos.GetMockUserRepository().Create(context.Background(), testUser)
 
 	// Successful login
 	body := `{"email": "test@example.com", "password": "password123"}`
@@ -357,7 +358,7 @@ func TestLogin_SuccessResetsFailedCount(t *testing.T) {
 	}
 
 	// Check that failed login count was reset
-	user, _ := mockRepos.GetMockUserRepository().GetByEmail(nil, "test@example.com")
+	user, _ := mockRepos.GetMockUserRepository().GetByEmail(context.Background(), "test@example.com")
 	if user.FailedLoginCount != 0 {
 		t.Errorf("Expected failed login count 0, got %d", user.FailedLoginCount)
 	}
@@ -400,7 +401,7 @@ func TestFirebaseLogin_ExistingUser(t *testing.T) {
 		DisplayName: "Firebase User",
 		IsActive:    true,
 	}
-	mockRepos.GetMockUserRepository().Create(nil, existingUser)
+	mockRepos.GetMockUserRepository().Create(context.Background(), existingUser)
 
 	body := `{"firebase_uid": "firebase123", "email": "firebase@example.com", "display_name": "Firebase User"}`
 	c, rec := createTestContext(http.MethodPost, "/api/v1/auth/firebase-login", body)
@@ -461,7 +462,7 @@ func TestLogout_WithToken(t *testing.T) {
 
 	// Check that token was blacklisted
 	tokenHash := auth.HashToken(token)
-	isBlacklisted, _ := mockRepos.GetMockTokenBlacklistRepository().IsBlacklisted(nil, tokenHash)
+	isBlacklisted, _ := mockRepos.GetMockTokenBlacklistRepository().IsBlacklisted(context.Background(), tokenHash)
 	if !isBlacklisted {
 		t.Error("Expected token to be blacklisted")
 	}

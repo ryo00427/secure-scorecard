@@ -136,4 +136,15 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	analytics.GET("/harvest", h.GetHarvestSummary)         // 収穫量集計取得
 	analytics.GET("/charts/:type", h.GetChartData)         // グラフデータ取得（月別、作物別、区画別）
 	analytics.GET("/export/:dataType", h.ExportCSV)        // CSVエクスポート（作物、収穫、タスク、全部）
+
+	// Notification endpoints (protected)
+	// 通知管理エンドポイント - デバイストークン登録、通知設定
+	notifications := protected.Group("/notifications")
+	notifications.POST("/device-token", h.RegisterDeviceToken)    // デバイストークン登録（FCM/APNS）
+	notifications.DELETE("/device-token", h.DeleteDeviceToken)    // デバイストークン削除
+
+	// User notification settings (protected)
+	// ユーザー通知設定エンドポイント
+	users.GET("/settings/notifications", h.GetNotificationSettings)    // 通知設定取得
+	users.PUT("/settings/notifications", h.UpdateNotificationSettings) // 通知設定更新
 }

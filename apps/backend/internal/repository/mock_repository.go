@@ -1049,6 +1049,216 @@ func (r *MockPlotAssignmentRepository) DeleteByPlotID(ctx context.Context, plotI
 }
 
 // =============================================================================
+// MockDeviceTokenRepository - デバイストークンリポジトリのモック実装
+// =============================================================================
+
+// MockDeviceTokenRepository は DeviceTokenRepository インターフェースのモック実装です。
+type MockDeviceTokenRepository struct {
+	Tokens          map[uint]*model.DeviceToken
+	TokensByUserID  map[uint][]*model.DeviceToken
+	TokensByToken   map[string]*model.DeviceToken
+	NextID          uint
+}
+
+// NewMockDeviceTokenRepository は新しいMockDeviceTokenRepositoryを作成します。
+func NewMockDeviceTokenRepository() *MockDeviceTokenRepository {
+	return &MockDeviceTokenRepository{
+		Tokens:         make(map[uint]*model.DeviceToken),
+		TokensByUserID: make(map[uint][]*model.DeviceToken),
+		TokensByToken:  make(map[string]*model.DeviceToken),
+		NextID:         1,
+	}
+}
+
+func (r *MockDeviceTokenRepository) Create(ctx context.Context, token *model.DeviceToken) error {
+	token.ID = r.NextID
+	r.NextID++
+	token.CreatedAt = time.Now()
+	token.UpdatedAt = time.Now()
+	r.Tokens[token.ID] = token
+	r.TokensByUserID[token.UserID] = append(r.TokensByUserID[token.UserID], token)
+	r.TokensByToken[token.Token] = token
+	return nil
+}
+
+func (r *MockDeviceTokenRepository) GetByID(ctx context.Context, id uint) (*model.DeviceToken, error) {
+	if token, ok := r.Tokens[id]; ok {
+		return token, nil
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+func (r *MockDeviceTokenRepository) GetByUserID(ctx context.Context, userID uint) ([]model.DeviceToken, error) {
+	tokens := r.TokensByUserID[userID]
+	result := make([]model.DeviceToken, len(tokens))
+	for i, t := range tokens {
+		result[i] = *t
+	}
+	return result, nil
+}
+
+func (r *MockDeviceTokenRepository) GetByUserIDAndPlatform(ctx context.Context, userID uint, platform string) (*model.DeviceToken, error) {
+	for _, t := range r.TokensByUserID[userID] {
+		if t.Platform == platform {
+			return t, nil
+		}
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+func (r *MockDeviceTokenRepository) GetByToken(ctx context.Context, token string) (*model.DeviceToken, error) {
+	if t, ok := r.TokensByToken[token]; ok {
+		return t, nil
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+func (r *MockDeviceTokenRepository) GetActiveByUserID(ctx context.Context, userID uint) ([]model.DeviceToken, error) {
+	var result []model.DeviceToken
+	for _, t := range r.TokensByUserID[userID] {
+		if t.IsActive {
+			result = append(result, *t)
+		}
+	}
+	return result, nil
+}
+
+func (r *MockDeviceTokenRepository) Update(ctx context.Context, token *model.DeviceToken) error {
+	token.UpdatedAt = time.Now()
+	r.Tokens[token.ID] = token
+	return nil
+}
+
+func (r *MockDeviceTokenRepository) Delete(ctx context.Context, id uint) error {
+	if token, ok := r.Tokens[id]; ok {
+		delete(r.TokensByToken, token.Token)
+		tokens := r.TokensByUserID[token.UserID]
+		for i, t := range tokens {
+			if t.ID == id {
+				r.TokensByUserID[token.UserID] = append(tokens[:i], tokens[i+1:]...)
+				break
+			}
+		}
+		delete(r.Tokens, id)
+	}
+	return nil
+}
+
+func (r *MockDeviceTokenRepository) DeleteByUserID(ctx context.Context, userID uint) error {
+	for _, token := range r.TokensByUserID[userID] {
+		delete(r.TokensByToken, token.Token)
+		delete(r.Tokens, token.ID)
+	}
+	delete(r.TokensByUserID, userID)
+	return nil
+}
+
+func (r *MockDeviceTokenRepository) DeactivateToken(ctx context.Context, id uint) error {
+	if token, ok := r.Tokens[id]; ok {
+		token.IsActive = false
+		token.UpdatedAt = time.Now()
+	}
+	return nil
+}
+
+// =============================================================================
+// MockNotificationLogRepository - 通知ログリポジトリのモック実装
+// =============================================================================
+
+// MockNotificationLogRepository は NotificationLogRepository インターフェースのモック実装です。
+type MockNotificationLogRepository struct {
+	Logs                 map[uint]*model.NotificationLog
+	LogsByUserID         map[uint][]*model.NotificationLog
+	LogsByDeduplication  map[string]*model.NotificationLog
+	NextID               uint
+}
+
+// NewMockNotificationLogRepository は新しいMockNotificationLogRepositoryを作成します。
+func NewMockNotificationLogRepository() *MockNotificationLogRepository {
+	return &MockNotificationLogRepository{
+		Logs:                make(map[uint]*model.NotificationLog),
+		LogsByUserID:        make(map[uint][]*model.NotificationLog),
+		LogsByDeduplication: make(map[string]*model.NotificationLog),
+		NextID:              1,
+	}
+}
+
+func (r *MockNotificationLogRepository) Create(ctx context.Context, log *model.NotificationLog) error {
+	log.ID = r.NextID
+	r.NextID++
+	log.CreatedAt = time.Now()
+	log.UpdatedAt = time.Now()
+	r.Logs[log.ID] = log
+	r.LogsByUserID[log.UserID] = append(r.LogsByUserID[log.UserID], log)
+	if log.DeduplicationKey != "" {
+		r.LogsByDeduplication[log.DeduplicationKey] = log
+	}
+	return nil
+}
+
+func (r *MockNotificationLogRepository) GetByID(ctx context.Context, id uint) (*model.NotificationLog, error) {
+	if log, ok := r.Logs[id]; ok {
+		return log, nil
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+func (r *MockNotificationLogRepository) GetByDeduplicationKey(ctx context.Context, key string) (*model.NotificationLog, error) {
+	if log, ok := r.LogsByDeduplication[key]; ok {
+		if log.ExpiresAt.After(time.Now()) {
+			return log, nil
+		}
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+func (r *MockNotificationLogRepository) GetByUserID(ctx context.Context, userID uint, limit int) ([]model.NotificationLog, error) {
+	logs := r.LogsByUserID[userID]
+	result := make([]model.NotificationLog, 0, len(logs))
+	for i := len(logs) - 1; i >= 0 && (limit <= 0 || len(result) < limit); i-- {
+		result = append(result, *logs[i])
+	}
+	return result, nil
+}
+
+func (r *MockNotificationLogRepository) GetPendingNotifications(ctx context.Context, limit int) ([]model.NotificationLog, error) {
+	var result []model.NotificationLog
+	for _, log := range r.Logs {
+		if log.Status == "pending" && log.RetryCount < 3 {
+			result = append(result, *log)
+			if limit > 0 && len(result) >= limit {
+				break
+			}
+		}
+	}
+	return result, nil
+}
+
+func (r *MockNotificationLogRepository) Update(ctx context.Context, log *model.NotificationLog) error {
+	log.UpdatedAt = time.Now()
+	r.Logs[log.ID] = log
+	return nil
+}
+
+func (r *MockNotificationLogRepository) DeleteExpired(ctx context.Context) error {
+	now := time.Now()
+	for id, log := range r.Logs {
+		if log.ExpiresAt.Before(now) {
+			delete(r.LogsByDeduplication, log.DeduplicationKey)
+			logs := r.LogsByUserID[log.UserID]
+			for i, l := range logs {
+				if l.ID == id {
+					r.LogsByUserID[log.UserID] = append(logs[:i], logs[i+1:]...)
+					break
+				}
+			}
+			delete(r.Logs, id)
+		}
+	}
+	return nil
+}
+
+// =============================================================================
 // MockRepositories - 全モックを束ねるファサード
 // =============================================================================
 
@@ -1059,34 +1269,38 @@ func (r *MockPlotAssignmentRepository) DeleteByPlotID(ctx context.Context, plotI
 // - 複数のモックリポジトリを1つのインターフェースでまとめる
 // - Service層は本番/テストを意識せずRepositoriesインターフェースを使用
 type MockRepositories struct {
-	userRepo           *MockUserRepository
-	gardenRepo         *MockGardenRepository
-	plantRepo          *MockPlantRepository
-	careLogRepo        *MockCareLogRepository
-	tokenBlacklistRepo *MockTokenBlacklistRepository
-	taskRepo           *MockTaskRepository
-	cropRepo           *MockCropRepository
-	growthRecordRepo   *MockGrowthRecordRepository
-	harvestRepo        *MockHarvestRepository
-	plotRepo           *MockPlotRepository
-	plotAssignmentRepo *MockPlotAssignmentRepository
+	userRepo            *MockUserRepository
+	gardenRepo          *MockGardenRepository
+	plantRepo           *MockPlantRepository
+	careLogRepo         *MockCareLogRepository
+	tokenBlacklistRepo  *MockTokenBlacklistRepository
+	taskRepo            *MockTaskRepository
+	cropRepo            *MockCropRepository
+	growthRecordRepo    *MockGrowthRecordRepository
+	harvestRepo         *MockHarvestRepository
+	plotRepo            *MockPlotRepository
+	plotAssignmentRepo  *MockPlotAssignmentRepository
+	deviceTokenRepo     *MockDeviceTokenRepository
+	notificationLogRepo *MockNotificationLogRepository
 }
 
 // NewMockRepositories は新しいMockRepositoriesを作成します。
 // 各モックリポジトリを初期化して返します。
 func NewMockRepositories() *MockRepositories {
 	return &MockRepositories{
-		userRepo:           NewMockUserRepository(),
-		gardenRepo:         &MockGardenRepository{},
-		plantRepo:          &MockPlantRepository{},
-		careLogRepo:        &MockCareLogRepository{},
-		tokenBlacklistRepo: NewMockTokenBlacklistRepository(),
-		taskRepo:           NewMockTaskRepository(),
-		cropRepo:           NewMockCropRepository(),
-		growthRecordRepo:   NewMockGrowthRecordRepository(),
-		harvestRepo:        NewMockHarvestRepository(),
-		plotRepo:           NewMockPlotRepository(),
-		plotAssignmentRepo: NewMockPlotAssignmentRepository(),
+		userRepo:            NewMockUserRepository(),
+		gardenRepo:          &MockGardenRepository{},
+		plantRepo:           &MockPlantRepository{},
+		careLogRepo:         &MockCareLogRepository{},
+		tokenBlacklistRepo:  NewMockTokenBlacklistRepository(),
+		taskRepo:            NewMockTaskRepository(),
+		cropRepo:            NewMockCropRepository(),
+		growthRecordRepo:    NewMockGrowthRecordRepository(),
+		harvestRepo:         NewMockHarvestRepository(),
+		plotRepo:            NewMockPlotRepository(),
+		plotAssignmentRepo:  NewMockPlotAssignmentRepository(),
+		deviceTokenRepo:     NewMockDeviceTokenRepository(),
+		notificationLogRepo: NewMockNotificationLogRepository(),
 	}
 }
 
@@ -1144,6 +1358,16 @@ func (m *MockRepositories) Plot() PlotRepository {
 // PlotAssignment は PlotAssignmentRepository インターフェースを返します。
 func (m *MockRepositories) PlotAssignment() PlotAssignmentRepository {
 	return m.plotAssignmentRepo
+}
+
+// DeviceToken は DeviceTokenRepository インターフェースを返します。
+func (m *MockRepositories) DeviceToken() DeviceTokenRepository {
+	return m.deviceTokenRepo
+}
+
+// NotificationLog は NotificationLogRepository インターフェースを返します。
+func (m *MockRepositories) NotificationLog() NotificationLogRepository {
+	return m.notificationLogRepo
 }
 
 // WithTransaction はトランザクション処理をシミュレートします。
