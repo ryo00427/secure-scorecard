@@ -49,6 +49,33 @@ func (r *cropRepository) GetByUserIDAndStatus(ctx context.Context, userID uint, 
 	return crops, nil
 }
 
+// GetUpcomingHarvests は指定日数以内に収穫予定の作物を取得します（通知処理用）
+// ユーザー情報を含めて取得し、収穫リマインダー通知に使用します
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//   - daysAhead: 今日から何日後までを対象とするか
+//
+// 戻り値:
+//   - []model.Crop: 収穫予定の作物一覧（ユーザー情報を含む）
+//   - error: 取得に失敗した場合のエラー
+func (r *cropRepository) GetUpcomingHarvests(ctx context.Context, daysAhead int) ([]model.Crop, error) {
+	var crops []model.Crop
+	today := time.Now().Truncate(24 * time.Hour)
+	targetDate := today.AddDate(0, 0, daysAhead)
+
+	// status が "growing" で、expected_harvest_date が今日から daysAhead 日後の作物を取得
+	if err := GetDB(ctx, r.db).
+		Preload("User").
+		Where("status = ? AND expected_harvest_date >= ? AND expected_harvest_date <= ?",
+			"growing", today, targetDate).
+		Order("user_id ASC, expected_harvest_date ASC").
+		Find(&crops).Error; err != nil {
+		return nil, err
+	}
+	return crops, nil
+}
+
 // Update updates a crop
 func (r *cropRepository) Update(ctx context.Context, crop *model.Crop) error {
 	return GetDB(ctx, r.db).Save(crop).Error

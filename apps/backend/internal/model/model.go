@@ -301,3 +301,66 @@ func (Plot) TableName() string {
 func (PlotAssignment) TableName() string {
 	return "plot_assignments"
 }
+
+// =============================================================================
+// Notification Domain Models - 通知管理モデル
+// =============================================================================
+
+// DeviceToken はプッシュ通知用のデバイストークンを表します。
+// FCM (Firebase Cloud Messaging) または APNS (Apple Push Notification Service) のトークンを保存します。
+//
+// プラットフォーム:
+//   - ios: Apple Push Notification Service (APNS)
+//   - android: Firebase Cloud Messaging (FCM)
+//   - web: Web Push (FCM経由)
+type DeviceToken struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	UserID    uint      `gorm:"index;not null" json:"user_id"`
+	Token     string    `gorm:"size:500;not null" json:"token"`
+	Platform  string    `gorm:"size:20;not null" json:"platform"`    // ios, android, web
+	DeviceID  string    `gorm:"size:100" json:"device_id,omitempty"` // デバイス識別子（オプション）
+	IsActive  bool      `gorm:"default:true" json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// リレーション
+	User User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+}
+
+// TableName overrides the table name for DeviceToken
+func (DeviceToken) TableName() string {
+	return "device_tokens"
+}
+
+// NotificationLog は送信された通知のログを表します。
+// 重複通知防止と配信状況の追跡に使用します。
+//
+// ステータス:
+//   - pending: 送信待ち
+//   - sent: 送信済み
+//   - failed: 送信失敗
+//   - delivered: 配信確認済み
+type NotificationLog struct {
+	ID               uint       `gorm:"primaryKey" json:"id"`
+	UserID           uint       `gorm:"index;not null" json:"user_id"`
+	NotificationType string     `gorm:"size:50;not null" json:"notification_type"` // task_due_reminder, task_overdue_alert, harvest_reminder
+	Channel          string     `gorm:"size:20;not null" json:"channel"`           // push, email
+	Title            string     `gorm:"size:200" json:"title"`
+	Body             string     `gorm:"size:1000" json:"body"`
+	Status           string     `gorm:"size:20;default:'pending'" json:"status"` // pending, sent, failed, delivered
+	ErrorMessage     string     `gorm:"size:500" json:"error_message,omitempty"`
+	RetryCount       int        `gorm:"default:0" json:"retry_count"`
+	SentAt           *time.Time `json:"sent_at,omitempty"`
+	DeduplicationKey string     `gorm:"size:100;index" json:"deduplication_key,omitempty"` // 重複防止用キー
+	ExpiresAt        time.Time  `gorm:"index" json:"expires_at"`                           // TTL用（24時間）
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+
+	// リレーション
+	User User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+}
+
+// TableName overrides the table name for NotificationLog
+func (NotificationLog) TableName() string {
+	return "notification_logs"
+}

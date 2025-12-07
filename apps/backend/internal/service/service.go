@@ -1741,3 +1741,279 @@ func formatRecurrence(recurrenceType string, interval int) string {
 	}
 	return fmt.Sprintf("毎%s", typeStr)
 }
+
+// =============================================================================
+// Scheduler Service Methods - スケジューラーサービスメソッド
+// =============================================================================
+// AWS EventBridge Scheduler から呼び出される定期タスク処理を提供します。
+// 期限切れタスク検出、当日タスクリマインダー、収穫リマインダーなどを処理します。
+
+// NotificationEventType は通知イベントの種類を表します。
+type NotificationEventType string
+
+const (
+	// NotificationEventTaskDueReminder は当日タスクのリマインダー通知
+	NotificationEventTaskDueReminder NotificationEventType = "task_due_reminder"
+	// NotificationEventTaskOverdueAlert は期限切れタスクの警告通知
+	NotificationEventTaskOverdueAlert NotificationEventType = "task_overdue_alert"
+	// NotificationEventHarvestReminder は収穫予定のリマインダー通知
+	NotificationEventHarvestReminder NotificationEventType = "harvest_reminder"
+)
+
+// NotificationEvent は通知イベントを表します。
+// NotificationService へ渡されて実際の通知（プッシュ、メール）が送信されます。
+type NotificationEvent struct {
+	Type      NotificationEventType `json:"type"`
+	UserID    uint                  `json:"user_id"`
+	UserEmail string                `json:"user_email"`
+	Title     string                `json:"title"`
+	Body      string                `json:"body"`
+	Data      map[string]interface{} `json:"data,omitempty"`
+}
+
+// SchedulerResult はスケジューラー処理の結果を表します。
+type SchedulerResult struct {
+	ProcessedAt       time.Time           `json:"processed_at"`
+	OverdueTaskAlerts int                 `json:"overdue_task_alerts"` // 期限切れ警告を送った件数
+	TodayTaskReminders int                `json:"today_task_reminders"` // 当日リマインダーを送った件数
+	HarvestReminders  int                 `json:"harvest_reminders"`   // 収穫リマインダーを送った件数
+	Events            []NotificationEvent `json:"events"`              // 生成された通知イベント
+}
+
+// OverdueWarningThreshold は期限切れタスク警告を発行するしきい値（3件以上で警告）
+const OverdueWarningThreshold = 3
+
+// HarvestReminderDaysAhead は収穫リマインダーを送る日数（7日前）
+const HarvestReminderDaysAhead = 7
+
+// ProcessScheduledNotifications は定期通知処理を実行します。
+// EventBridge Scheduler から毎日呼び出され、以下の処理を行います：
+//   - 期限切れタスク検出（3件以上で警告通知）
+//   - 当日タスクのリマインダー通知
+//   - 7日以内の収穫予定リマインダー通知
+//
+// 引数:
+//   - ctx: リクエストコンテキスト
+//
+// 戻り値:
+//   - *SchedulerResult: 処理結果（生成された通知イベントを含む）
+//   - error: 処理に失敗した場合のエラー
+func (s *Service) ProcessScheduledNotifications(ctx context.Context) (*SchedulerResult, error) {
+	result := &SchedulerResult{
+		ProcessedAt: time.Now(),
+		Events:      make([]NotificationEvent, 0),
+	}
+
+	// 1. 期限切れタスク警告を処理
+	overdueEvents, err := s.processOverdueTaskAlerts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process overdue task alerts: %w", err)
+	}
+	result.Events = append(result.Events, overdueEvents...)
+	result.OverdueTaskAlerts = len(overdueEvents)
+
+	// 2. 当日タスクリマインダーを処理
+	todayEvents, err := s.processTodayTaskReminders(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process today task reminders: %w", err)
+	}
+	result.Events = append(result.Events, todayEvents...)
+	result.TodayTaskReminders = len(todayEvents)
+
+	// 3. 収穫リマインダーを処理
+	harvestEvents, err := s.processHarvestReminders(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process harvest reminders: %w", err)
+	}
+	result.Events = append(result.Events, harvestEvents...)
+	result.HarvestReminders = len(harvestEvents)
+
+	return result, nil
+}
+
+// processOverdueTaskAlerts は期限切れタスクの警告通知を処理します。
+// ユーザーごとに期限切れタスクを集計し、3件以上ある場合に警告通知を生成します。
+func (s *Service) processOverdueTaskAlerts(ctx context.Context) ([]NotificationEvent, error) {
+	// システム全体の期限切れタスクを取得
+	overdueTasks, err := s.repos.Task().GetAllOverdueTasks(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// ユーザーごとにタスクをグループ化
+	userTasks := make(map[uint][]model.Task)
+	userInfo := make(map[uint]*model.User)
+	for _, task := range overdueTasks {
+		userTasks[task.UserID] = append(userTasks[task.UserID], task)
+		if task.User.ID != 0 {
+			userInfo[task.UserID] = &task.User
+		}
+	}
+
+	var events []NotificationEvent
+
+	// ユーザーごとに処理
+	for userID, tasks := range userTasks {
+		user := userInfo[userID]
+		if user == nil {
+			continue
+		}
+
+		// 通知設定をチェック
+		if user.NotificationSettings != nil && !user.NotificationSettings.TaskReminders {
+			continue // タスクリマインダーが無効
+		}
+
+		// 3件以上の場合のみ警告
+		if len(tasks) >= OverdueWarningThreshold {
+			event := NotificationEvent{
+				Type:      NotificationEventTaskOverdueAlert,
+				UserID:    userID,
+				UserEmail: user.Email,
+				Title:     "期限切れタスクの警告",
+				Body:      fmt.Sprintf("%d件のタスクが期限切れです。確認してください。", len(tasks)),
+				Data: map[string]interface{}{
+					"overdue_count": len(tasks),
+					"task_ids":      getTaskIDs(tasks),
+				},
+			}
+			events = append(events, event)
+		}
+	}
+
+	return events, nil
+}
+
+// processTodayTaskReminders は今日が期限のタスクのリマインダーを処理します。
+func (s *Service) processTodayTaskReminders(ctx context.Context) ([]NotificationEvent, error) {
+	// システム全体の今日のタスクを取得
+	todayTasks, err := s.repos.Task().GetAllTodayTasks(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// ユーザーごとにタスクをグループ化
+	userTasks := make(map[uint][]model.Task)
+	userInfo := make(map[uint]*model.User)
+	for _, task := range todayTasks {
+		userTasks[task.UserID] = append(userTasks[task.UserID], task)
+		if task.User.ID != 0 {
+			userInfo[task.UserID] = &task.User
+		}
+	}
+
+	var events []NotificationEvent
+
+	// ユーザーごとに処理
+	for userID, tasks := range userTasks {
+		user := userInfo[userID]
+		if user == nil {
+			continue
+		}
+
+		// 通知設定をチェック
+		if user.NotificationSettings != nil && !user.NotificationSettings.TaskReminders {
+			continue // タスクリマインダーが無効
+		}
+
+		// タスクがあればリマインダーを送信
+		if len(tasks) > 0 {
+			body := fmt.Sprintf("今日のタスクが%d件あります。", len(tasks))
+			if len(tasks) == 1 {
+				body = fmt.Sprintf("今日のタスク: %s", tasks[0].Title)
+			}
+
+			event := NotificationEvent{
+				Type:      NotificationEventTaskDueReminder,
+				UserID:    userID,
+				UserEmail: user.Email,
+				Title:     "今日のタスクリマインダー",
+				Body:      body,
+				Data: map[string]interface{}{
+					"task_count": len(tasks),
+					"task_ids":   getTaskIDs(tasks),
+				},
+			}
+			events = append(events, event)
+		}
+	}
+
+	return events, nil
+}
+
+// processHarvestReminders は収穫予定のリマインダーを処理します。
+// 7日以内に収穫予定の作物があるユーザーに通知を送信します。
+func (s *Service) processHarvestReminders(ctx context.Context) ([]NotificationEvent, error) {
+	// 7日以内に収穫予定の作物を取得
+	upcomingCrops, err := s.repos.Crop().GetUpcomingHarvests(ctx, HarvestReminderDaysAhead)
+	if err != nil {
+		return nil, err
+	}
+
+	// ユーザーごとに作物をグループ化
+	userCrops := make(map[uint][]model.Crop)
+	userInfo := make(map[uint]*model.User)
+	for _, crop := range upcomingCrops {
+		userCrops[crop.UserID] = append(userCrops[crop.UserID], crop)
+		if crop.User.ID != 0 {
+			userInfo[crop.UserID] = &crop.User
+		}
+	}
+
+	var events []NotificationEvent
+
+	// ユーザーごとに処理
+	for userID, crops := range userCrops {
+		user := userInfo[userID]
+		if user == nil {
+			continue
+		}
+
+		// 通知設定をチェック
+		if user.NotificationSettings != nil && !user.NotificationSettings.HarvestReminders {
+			continue // 収穫リマインダーが無効
+		}
+
+		// 作物があればリマインダーを送信
+		if len(crops) > 0 {
+			body := fmt.Sprintf("%d件の作物が7日以内に収穫予定です。", len(crops))
+			if len(crops) == 1 {
+				daysUntil := int(crops[0].ExpectedHarvestDate.Sub(time.Now().Truncate(24*time.Hour)).Hours() / 24)
+				body = fmt.Sprintf("%s があと%d日で収穫予定です。", crops[0].Name, daysUntil)
+			}
+
+			event := NotificationEvent{
+				Type:      NotificationEventHarvestReminder,
+				UserID:    userID,
+				UserEmail: user.Email,
+				Title:     "収穫リマインダー",
+				Body:      body,
+				Data: map[string]interface{}{
+					"crop_count": len(crops),
+					"crop_ids":   getCropIDs(crops),
+				},
+			}
+			events = append(events, event)
+		}
+	}
+
+	return events, nil
+}
+
+// getTaskIDs はタスクのIDリストを取得します。
+func getTaskIDs(tasks []model.Task) []uint {
+	ids := make([]uint, len(tasks))
+	for i, task := range tasks {
+		ids[i] = task.ID
+	}
+	return ids
+}
+
+// getCropIDs は作物のIDリストを取得します。
+func getCropIDs(crops []model.Crop) []uint {
+	ids := make([]uint, len(crops))
+	for i, crop := range crops {
+		ids[i] = crop.ID
+	}
+	return ids
+}

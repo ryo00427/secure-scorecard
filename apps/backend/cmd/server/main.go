@@ -90,6 +90,9 @@ func main() {
 		// Register routes
 		h.RegisterRoutes(e)
 
+		// Register scheduler routes (for EventBridge Scheduler)
+		h.RegisterSchedulerRoutes(e, cfg.Scheduler.AuthToken)
+
 		// Add database health check endpoint
 		e.GET("/health/db", func(c echo.Context) error {
 			if err := db.HealthCheck(); err != nil {

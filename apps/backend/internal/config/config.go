@@ -10,11 +10,17 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	JWT      JWTConfig
-	CORS     CORSConfig
-	S3       S3Config
+	Server    ServerConfig
+	Database  DatabaseConfig
+	JWT       JWTConfig
+	CORS      CORSConfig
+	S3        S3Config
+	Scheduler SchedulerConfig
+}
+
+// SchedulerConfig はスケジューラー関連の設定を保持します
+type SchedulerConfig struct {
+	AuthToken string // EventBridge Scheduler からの認証トークン
 }
 
 // S3Config はS3/CloudFront設定を保持します
@@ -87,6 +93,9 @@ func Load() (*Config, error) {
 			SecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),
 			CloudFrontURL:   getEnv("CLOUDFRONT_URL", ""),
 			Endpoint:        getEnv("S3_ENDPOINT", ""), // LocalStack用
+		},
+		Scheduler: SchedulerConfig{
+			AuthToken: getEnv("SCHEDULER_AUTH_TOKEN", ""), // EventBridge用認証トークン
 		},
 	}
 

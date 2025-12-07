@@ -260,7 +260,7 @@
   - タスク作成時にendCondition必須バリデーション追加
   - _Requirements: 3.3, 3.6_
 
-- [ ] 8.3 (P) TaskService - 期限切れ検出と通知連携
+- [x] 8.3 (P) TaskService - 期限切れ検出と通知連携
   - 期限切れタスク検出ロジック実装（due_date < today and status = 'Pending'）
   - 期限切れタスク3件以上で警告イベント発行（NotificationServiceへ）
   - AWS EventBridge Schedulerとの統合（Daily cron job）

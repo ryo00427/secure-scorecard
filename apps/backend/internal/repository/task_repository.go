@@ -76,6 +76,39 @@ func (r *taskRepository) GetOverdueTasks(ctx context.Context, userID uint) ([]mo
 	return tasks, nil
 }
 
+// GetAllOverdueTasks はシステム全体の期限切れタスクを取得します（通知処理用）
+// ユーザー情報を含めて取得し、通知対象の判定に使用します
+func (r *taskRepository) GetAllOverdueTasks(ctx context.Context) ([]model.Task, error) {
+	var tasks []model.Task
+	today := time.Now().Truncate(24 * time.Hour)
+
+	if err := GetDB(ctx, r.db).
+		Preload("User").
+		Where("status = ? AND due_date < ?", "pending", today).
+		Order("user_id ASC, due_date ASC").
+		Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+// GetAllTodayTasks はシステム全体の今日が期限のタスクを取得します（通知処理用）
+// ユーザー情報を含めて取得し、リマインダー通知に使用します
+func (r *taskRepository) GetAllTodayTasks(ctx context.Context) ([]model.Task, error) {
+	var tasks []model.Task
+	today := time.Now().Truncate(24 * time.Hour)
+	tomorrow := today.Add(24 * time.Hour)
+
+	if err := GetDB(ctx, r.db).
+		Preload("User").
+		Where("status = ? AND due_date >= ? AND due_date < ?", "pending", today, tomorrow).
+		Order("user_id ASC, priority DESC, due_date ASC").
+		Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
 // Update updates a task
 func (r *taskRepository) Update(ctx context.Context, task *model.Task) error {
 	return GetDB(ctx, r.db).Save(task).Error

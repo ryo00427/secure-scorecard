@@ -392,6 +392,33 @@ func (r *MockTaskRepository) GetOverdueTasks(ctx context.Context, userID uint) (
 	return result, nil
 }
 
+// GetAllOverdueTasks はシステム全体の期限切れタスクを取得します（通知処理用）。
+func (r *MockTaskRepository) GetAllOverdueTasks(ctx context.Context) ([]model.Task, error) {
+	today := time.Now().Truncate(24 * time.Hour)
+
+	var result []model.Task
+	for _, t := range r.Tasks {
+		if t.Status == "pending" && t.DueDate.Before(today) {
+			result = append(result, *t)
+		}
+	}
+	return result, nil
+}
+
+// GetAllTodayTasks はシステム全体の今日が期限のタスクを取得します（通知処理用）。
+func (r *MockTaskRepository) GetAllTodayTasks(ctx context.Context) ([]model.Task, error) {
+	today := time.Now().Truncate(24 * time.Hour)
+	tomorrow := today.Add(24 * time.Hour)
+
+	var result []model.Task
+	for _, t := range r.Tasks {
+		if t.Status == "pending" && !t.DueDate.Before(today) && t.DueDate.Before(tomorrow) {
+			result = append(result, *t)
+		}
+	}
+	return result, nil
+}
+
 // Update はタスクを更新します。
 func (r *MockTaskRepository) Update(ctx context.Context, task *model.Task) error {
 	if r.UpdateFunc != nil {
@@ -509,6 +536,22 @@ func (r *MockCropRepository) GetByUserIDAndStatus(ctx context.Context, userID ui
 	var result []model.Crop
 	for _, c := range r.CropsByUserID[userID] {
 		if c.Status == status {
+			result = append(result, *c)
+		}
+	}
+	return result, nil
+}
+
+// GetUpcomingHarvests は指定日数以内に収穫予定の作物を取得します（通知処理用）。
+func (r *MockCropRepository) GetUpcomingHarvests(ctx context.Context, daysAhead int) ([]model.Crop, error) {
+	today := time.Now().Truncate(24 * time.Hour)
+	targetDate := today.AddDate(0, 0, daysAhead)
+
+	var result []model.Crop
+	for _, c := range r.Crops {
+		if c.Status == "growing" &&
+			!c.ExpectedHarvestDate.Before(today) &&
+			!c.ExpectedHarvestDate.After(targetDate) {
 			result = append(result, *c)
 		}
 	}
