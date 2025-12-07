@@ -304,8 +304,8 @@
 
 ## 10. バックエンド - NotificationService実装
 
-- [ ] 10.1 (P) NotificationService - デバイストークン管理
-  - デバイストークン登録ロジック実装（DynamoDB保存）
+- [x] 10.1 (P) NotificationService - デバイストークン管理
+  - デバイストークン登録ロジック実装（PostgreSQL保存）
   - デバイストークン削除ロジック実装（無効トークン対応）
   - (userID, platform) 複合キーでの管理
   - トークン有効性検証
@@ -337,8 +337,9 @@
   - SNS/SQSイベントハンドラー実装
   - _Requirements: 1.5, 5.1, 5.2, 5.3, 5.5_
 
-- [ ] 10.5 (P) NotificationService - 通知設定カスタマイズ
-  - `PUT /api/users/settings` 通知設定更新エンドポイント
+- [x] 10.5 (P) NotificationService - 通知設定カスタマイズ
+  - `PUT /api/users/settings/notifications` 通知設定更新エンドポイント
+  - `GET /api/users/settings/notifications` 通知設定取得エンドポイント
   - notification_settings JSONB更新
   - 設定項目（pushEnabled, emailEnabled, taskReminders, harvestReminders, growthRecordNotifications）
   - _Requirements: 5.4_
