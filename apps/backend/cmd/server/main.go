@@ -90,8 +90,19 @@ func main() {
 		// Register routes
 		h.RegisterRoutes(e)
 
+		// Initialize notification sender and event handler (optional)
+		var notificationEventHandler service.NotificationEventHandler
+		notificationSender, err := service.NewNotificationSender(&cfg.Notification)
+		if err != nil {
+			log.Printf("Warning: Notification sender initialization failed: %v", err)
+			log.Println("Notifications will not be sent (scheduler will still process events)")
+		} else {
+			notificationEventHandler = service.NewNotificationEventHandler(svc, notificationSender, repos)
+			log.Println("Notification sender initialized successfully")
+		}
+
 		// Register scheduler routes (for EventBridge Scheduler)
-		h.RegisterSchedulerRoutes(e, cfg.Scheduler.AuthToken)
+		h.RegisterSchedulerRoutes(e, cfg.Scheduler.AuthToken, notificationEventHandler)
 
 		// Add database health check endpoint
 		e.GET("/health/db", func(c echo.Context) error {

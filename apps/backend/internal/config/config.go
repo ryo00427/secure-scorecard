@@ -10,12 +10,31 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	Server    ServerConfig
-	Database  DatabaseConfig
-	JWT       JWTConfig
-	CORS      CORSConfig
-	S3        S3Config
-	Scheduler SchedulerConfig
+	Server       ServerConfig
+	Database     DatabaseConfig
+	JWT          JWTConfig
+	CORS         CORSConfig
+	S3           S3Config
+	Scheduler    SchedulerConfig
+	Notification NotificationConfig
+}
+
+// NotificationConfig は通知サービスの設定を保持します
+type NotificationConfig struct {
+	// AWS共通設定
+	AWSRegion string // AWSリージョン（SNS/SES用）
+
+	// SNS設定（プッシュ通知用）
+	SNSPlatformARNiOS     string // iOS用 SNS Platform Application ARN
+	SNSPlatformARNAndroid string // Android用 SNS Platform Application ARN
+
+	// SES設定（メール通知用）
+	SESFromEmail string // SES送信元メールアドレス
+	SESFromName  string // 送信者名
+
+	// リトライ設定
+	MaxRetries       int // 最大リトライ回数（デフォルト: 3）
+	InitialBackoffMs int // 初回リトライ待機時間(ms)（デフォルト: 1000）
 }
 
 // SchedulerConfig はスケジューラー関連の設定を保持します
@@ -96,6 +115,15 @@ func Load() (*Config, error) {
 		},
 		Scheduler: SchedulerConfig{
 			AuthToken: getEnv("SCHEDULER_AUTH_TOKEN", ""), // EventBridge用認証トークン
+		},
+		Notification: NotificationConfig{
+			AWSRegion:             getEnv("AWS_REGION", "ap-northeast-1"),
+			SNSPlatformARNiOS:     getEnv("SNS_PLATFORM_ARN_IOS", ""),
+			SNSPlatformARNAndroid: getEnv("SNS_PLATFORM_ARN_ANDROID", ""),
+			SESFromEmail:          getEnv("SES_FROM_EMAIL", ""),
+			SESFromName:           getEnv("SES_FROM_NAME", "Home Garden"),
+			MaxRetries:            getEnvAsInt("NOTIFICATION_MAX_RETRIES", 3),
+			InitialBackoffMs:      getEnvAsInt("NOTIFICATION_INITIAL_BACKOFF_MS", 1000),
 		},
 	}
 
