@@ -344,7 +344,7 @@
   - 設定項目（pushEnabled, emailEnabled, taskReminders, harvestReminders, growthRecordNotifications）
   - _Requirements: 5.4_
 
-- [ ] 10.6* NotificationService - 統合テスト
+- [x] 10.6* NotificationService - 統合テスト
   - デバイストークン登録→プッシュ通知配信フロー確認
   - イベント発行→通知配信フロー確認（Cron job実行含む）
   - ユーザー設定による通知スキップ確認
