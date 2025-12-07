@@ -56,14 +56,9 @@ func main() {
 	} else {
 		defer db.Close()
 
-		// Run migrations
-		if err := db.AutoMigrate(); err != nil {
-			log.Printf("Warning: Auto-migration failed: %v", err)
-		}
-
-		// Create indexes
-		if err := db.CreateIndexes(); err != nil {
-			log.Printf("Warning: Index creation failed: %v", err)
+		// Run full database setup (migrations, indexes, constraints, materialized views)
+		if err := db.Setup(); err != nil {
+			log.Printf("Warning: Database setup failed: %v", err)
 		}
 
 		// Initialize JWT manager
