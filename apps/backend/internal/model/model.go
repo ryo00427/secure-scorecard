@@ -14,17 +14,29 @@ type BaseModel struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
+// NotificationSettings はユーザーの通知設定を表します。
+// JSONB形式でデータベースに保存されます。
+type NotificationSettings struct {
+	PushEnabled              bool `json:"push_enabled"`               // プッシュ通知有効
+	EmailEnabled             bool `json:"email_enabled"`              // メール通知有効
+	TaskReminders            bool `json:"task_reminders"`             // タスクリマインダー
+	HarvestReminders         bool `json:"harvest_reminders"`          // 収穫リマインダー
+	GrowthRecordNotifications bool `json:"growth_record_notifications"` // 成長記録通知
+}
+
 // User represents a user in the system
+// ユーザーモデル - 認証情報と通知設定を管理します。
 type User struct {
 	BaseModel
-	FirebaseUID      string     `gorm:"uniqueIndex;size:128" json:"firebase_uid,omitempty"`
-	Email            string     `gorm:"uniqueIndex;size:255;not null" json:"email"`
-	PasswordHash     string     `gorm:"size:255" json:"-"`
-	DisplayName      string     `gorm:"size:100" json:"display_name"`
-	PhotoURL         string     `gorm:"size:500" json:"photo_url,omitempty"`
-	IsActive         bool       `gorm:"default:true" json:"is_active"`
-	FailedLoginCount int        `gorm:"default:0" json:"-"`
-	LockedUntil      *time.Time `json:"-"`
+	FirebaseUID          string                `gorm:"uniqueIndex;size:128" json:"firebase_uid,omitempty"`
+	Email                string                `gorm:"uniqueIndex;size:255;not null" json:"email"`
+	PasswordHash         string                `gorm:"size:255" json:"-"`
+	DisplayName          string                `gorm:"size:100" json:"display_name"`
+	PhotoURL             string                `gorm:"size:500" json:"photo_url,omitempty"`
+	IsActive             bool                  `gorm:"default:true" json:"is_active"`
+	FailedLoginCount     int                   `gorm:"default:0" json:"-"`
+	LockedUntil          *time.Time            `json:"-"`
+	NotificationSettings *NotificationSettings `gorm:"type:jsonb;default:'{\"push_enabled\":true,\"email_enabled\":true,\"task_reminders\":true,\"harvest_reminders\":true,\"growth_record_notifications\":false}'" json:"notification_settings,omitempty"`
 }
 
 // Garden represents a garden owned by a user

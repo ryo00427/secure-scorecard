@@ -62,7 +62,7 @@
 
 ## 3. データベース設計（PostgreSQL）
 
-- [ ] 3.1 データベーススキーマ設計と作成
+- [x] 3.1 データベーススキーマ設計と作成
   - usersテーブル作成（email, password_hash, notification_settings）
   - cropsテーブル作成（name, variety, planted_date, expected_harvest_date, status）
   - growth_recordsテーブル作成（crop_id, record_date, growth_stage, notes, image_url）
@@ -73,7 +73,7 @@
   - token_blacklistテーブル作成（token_hash, revoked_at, expires_at）
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 3.1, 6.1, 6.3, 6.5_
 
-- [ ] 3.2 インデックスと制約設定
+- [x] 3.2 インデックスと制約設定
   - 各テーブルに適切なインデックス作成（user_id, status, due_date, expires_at等）
   - 外部キー制約設定（ON DELETE CASCADE, SET NULL）
   - CHECK制約設定（valid_dates等）
@@ -82,7 +82,7 @@
   - token_blacklist期限切れトークン定期削除ジョブ設定（Daily cron）
   - _Requirements: 6.3, 6.5_
 
-- [ ] 3.3 Materialized Viewと分析用インデックス
+- [x] 3.3 Materialized Viewと分析用インデックス
   - mv_harvest_analyticsマテリアライズドビュー作成
   - 集計クエリ高速化用インデックス作成
   - 定期リフレッシュジョブ設定（毎日深夜）
