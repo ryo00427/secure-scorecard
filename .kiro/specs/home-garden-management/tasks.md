@@ -176,7 +176,7 @@
   - plantedDate <= expectedHarvestDate バリデーション
   - _Requirements: 1.1, 6.3_
 
-- [ ] 6.2 CropService - 成長記録機能
+- [x] 6.2 CropService - 成長記録機能
   - `POST /api/crops/:id/records` 成長記録追加エンドポイント
   - `GET /api/crops/:id/records` 成長記録一覧取得エンドポイント（時系列ソート）
   - growth_recordsテーブルへの挿入
@@ -184,7 +184,7 @@
   - 画像URL保存（S3署名付きURL連携）
   - _Requirements: 1.2, 1.4, 4.3_
 
-- [ ] 6.3 (P) CropService - 収穫記録機能
+- [x] 6.3 (P) CropService - 収穫記録機能
   - `POST /api/crops/:id/harvest` 収穫記録エンドポイント
   - harvestsテーブルへの挿入
   - 作物ステータスを"Harvested"に更新
@@ -192,7 +192,7 @@
   - 収穫7日前の通知イベント発行（NotificationServiceへ）
   - _Requirements: 1.3, 1.5_
 
-- [ ] 6.4 (P) CropService - 画像アップロード機能
+- [x] 6.4 (P) CropService - 画像アップロード機能
   - `POST /api/crops/images` 画像アップロードエンドポイント
   - S3署名付きURL生成（presigned URL, 15分有効）
   - 画像ファイルサイズ・形式バリデーション（5MB上限、JPEG/PNG/WEBP）

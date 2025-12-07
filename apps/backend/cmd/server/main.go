@@ -20,6 +20,7 @@ import (
 	"github.com/secure-scorecard/backend/internal/middleware"
 	"github.com/secure-scorecard/backend/internal/repository"
 	"github.com/secure-scorecard/backend/internal/service"
+	"github.com/secure-scorecard/backend/internal/storage"
 	"github.com/secure-scorecard/backend/internal/validator"
 )
 
@@ -68,10 +69,28 @@ func main() {
 		// Initialize JWT manager
 		jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.ExpireHour)
 
+		// Initialize S3 service (optional - can run without S3)
+		s3Config := &storage.S3Config{
+			Region:          cfg.S3.Region,
+			BucketName:      cfg.S3.BucketName,
+			AccessKeyID:     cfg.S3.AccessKeyID,
+			SecretAccessKey: cfg.S3.SecretAccessKey,
+			CloudFrontURL:   cfg.S3.CloudFrontURL,
+			Endpoint:        cfg.S3.Endpoint,
+		}
+		s3Svc, err := storage.NewS3Service(s3Config)
+		if err != nil {
+			log.Printf("Warning: S3 service initialization failed: %v", err)
+			log.Println("Image upload functionality will be unavailable")
+			s3Svc = nil
+		} else if !s3Config.IsConfigured() {
+			log.Println("S3 not configured - image upload functionality will be unavailable")
+		}
+
 		// Initialize layers with new repository manager
 		repos := repository.NewRepositoryManager(db.DB)
 		svc := service.NewService(repos)
-		h := handler.NewHandler(svc, jwtManager)
+		h := handler.NewHandler(svc, jwtManager, s3Svc)
 
 		// Register routes
 		h.RegisterRoutes(e)

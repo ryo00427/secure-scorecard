@@ -14,6 +14,8 @@
 package handler
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,6 +24,7 @@ import (
 	"github.com/secure-scorecard/backend/internal/auth"
 	apperrors "github.com/secure-scorecard/backend/internal/errors"
 	"github.com/secure-scorecard/backend/internal/model"
+	"github.com/secure-scorecard/backend/internal/storage"
 	"github.com/secure-scorecard/backend/internal/validator"
 )
 
@@ -464,4 +467,178 @@ func (h *Handler) CreateHarvest(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, harvest)
+}
+
+// =============================================================================
+// Image Upload ハンドラメソッド
+// =============================================================================
+
+// GenerateImageUploadURLRequest はPresigned URL生成リクエストの構造体です。
+type GenerateImageUploadURLRequest struct {
+	ContentType string `json:"content_type" validate:"required,oneof=image/jpeg image/png image/webp"`
+}
+
+// GenerateImageUploadURLResponse はPresigned URL生成レスポンスの構造体です。
+type GenerateImageUploadURLResponse struct {
+	UploadURL  string    `json:"upload_url"`   // アップロード用Presigned URL
+	ObjectKey  string    `json:"object_key"`   // S3オブジェクトキー
+	ContentURL string    `json:"content_url"`  // アップロード後の画像URL（CloudFront経由）
+	ExpiresAt  time.Time `json:"expires_at"`   // URLの有効期限
+}
+
+// GenerateImageUploadURL はS3 Presigned URLを生成します。
+// クライアントはこのURLを使用して直接S3に画像をアップロードできます。
+//
+// リクエストボディ:
+//   - content_type: 画像のMIMEタイプ（image/jpeg, image/png, image/webp）
+//
+// レスポンス:
+//   - 200: Presigned URL情報
+//   - 400: バリデーションエラー
+//   - 401: 認証エラー
+//   - 503: S3未設定エラー
+func (h *Handler) GenerateImageUploadURL(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// 認証済みユーザーIDを取得
+	userID := auth.GetUserIDFromContext(c)
+	if userID == 0 {
+		return apperrors.NewAuthenticationError("Not authenticated")
+	}
+
+	// リクエストボディをバインド&バリデーション
+	var req GenerateImageUploadURLRequest
+	if err := validator.BindAndValidate(c, &req); err != nil {
+		return err
+	}
+
+	// S3サービスがnilかチェック（HandlerにS3Serviceを追加する必要あり）
+	if h.s3Service == nil {
+		return apperrors.NewServiceUnavailableError("Image upload service is not available")
+	}
+
+	// Presigned URLを生成
+	result, err := h.s3Service.GenerateUploadURL(ctx, userID, req.ContentType)
+	if err != nil {
+		if err == storage.ErrS3NotConfigured {
+			return apperrors.NewServiceUnavailableError("Image upload service is not configured")
+		}
+		if err == storage.ErrInvalidImageType {
+			return apperrors.NewBadRequestError("Invalid image type: only JPEG, PNG, and WEBP are allowed")
+		}
+		return apperrors.NewInternalError("Failed to generate upload URL")
+	}
+
+	return c.JSON(http.StatusOK, GenerateImageUploadURLResponse{
+		UploadURL:  result.UploadURL,
+		ObjectKey:  result.ObjectKey,
+		ContentURL: result.ContentURL,
+		ExpiresAt:  result.ExpiresAt,
+	})
+}
+
+// UploadImageResponse は画像アップロードレスポンスの構造体です。
+type UploadImageResponse struct {
+	ObjectKey  string `json:"object_key"`  // S3オブジェクトキー
+	ContentURL string `json:"content_url"` // 画像URL（CloudFront経由）
+	Size       int64  `json:"size"`        // ファイルサイズ（バイト）
+}
+
+// UploadImage はサーバー経由で画像をS3にアップロードします。
+// multipart/form-data形式でファイルを受け取ります。
+//
+// リクエスト:
+//   - image: 画像ファイル（multipart/form-data）
+//
+// レスポンス:
+//   - 201: アップロード成功
+//   - 400: バリデーションエラー（サイズ超過、形式不正）
+//   - 401: 認証エラー
+//   - 503: S3未設定エラー
+//
+// 制限:
+//   - 最大ファイルサイズ: 5MB
+//   - 許可形式: JPEG, PNG, WEBP
+func (h *Handler) UploadImage(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// 認証済みユーザーIDを取得
+	userID := auth.GetUserIDFromContext(c)
+	if userID == 0 {
+		return apperrors.NewAuthenticationError("Not authenticated")
+	}
+
+	// S3サービスがnilかチェック
+	if h.s3Service == nil {
+		return apperrors.NewServiceUnavailableError("Image upload service is not available")
+	}
+
+	// multipart/form-dataからファイルを取得
+	file, err := c.FormFile("image")
+	if err != nil {
+		return apperrors.NewBadRequestError("Image file is required")
+	}
+
+	// ファイルサイズをチェック
+	if file.Size > storage.MaxImageSize {
+		return apperrors.NewBadRequestError("File size exceeds maximum allowed size (5MB)")
+	}
+
+	// ファイルを開く
+	src, err := file.Open()
+	if err != nil {
+		return apperrors.NewInternalError("Failed to read uploaded file")
+	}
+	defer src.Close()
+
+	// ファイル内容を読み込んでMIMEタイプを検証
+	// 先頭512バイトでMIMEタイプを判定
+	buf := make([]byte, 512)
+	n, err := src.Read(buf)
+	if err != nil && err != io.EOF {
+		return apperrors.NewInternalError("Failed to read file content")
+	}
+
+	contentType, err := storage.ValidateImageFile(buf[:n], file.Size)
+	if err != nil {
+		if err == storage.ErrFileTooLarge {
+			return apperrors.NewBadRequestError("File size exceeds maximum allowed size (5MB)")
+		}
+		if err == storage.ErrInvalidImageType {
+			return apperrors.NewBadRequestError("Invalid image type: only JPEG, PNG, and WEBP are allowed")
+		}
+		return apperrors.NewInternalError("Failed to validate image")
+	}
+
+	// ファイルポインタを先頭に戻す
+	if _, err := src.Seek(0, io.SeekStart); err != nil {
+		return apperrors.NewInternalError("Failed to process file")
+	}
+
+	// 全内容を読み込む（S3アップロード用）
+	content, err := io.ReadAll(src)
+	if err != nil {
+		return apperrors.NewInternalError("Failed to read file content")
+	}
+
+	// S3にアップロード（Exponential backoffリトライ付き）
+	result, err := h.s3Service.UploadImage(ctx, userID, bytes.NewReader(content), contentType, file.Size)
+	if err != nil {
+		if err == storage.ErrS3NotConfigured {
+			return apperrors.NewServiceUnavailableError("Image upload service is not configured")
+		}
+		if err == storage.ErrFileTooLarge {
+			return apperrors.NewBadRequestError("File size exceeds maximum allowed size (5MB)")
+		}
+		if err == storage.ErrInvalidImageType {
+			return apperrors.NewBadRequestError("Invalid image type: only JPEG, PNG, and WEBP are allowed")
+		}
+		return apperrors.NewInternalError("Failed to upload image")
+	}
+
+	return c.JSON(http.StatusCreated, UploadImageResponse{
+		ObjectKey:  result.ObjectKey,
+		ContentURL: result.ContentURL,
+		Size:       result.Size,
+	})
 }
