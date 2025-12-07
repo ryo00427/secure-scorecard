@@ -311,7 +311,7 @@
   - トークン有効性検証
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 10.2 NotificationService - プッシュ通知配信
+- [x] 10.2 NotificationService - プッシュ通知配信
   - AWS SNS統合（Platform Application経由）
   - FCM/APNS向けメッセージフォーマット変換
   - data-onlyメッセージ設定（priority: high, content-available: true）
@@ -321,7 +321,7 @@
   - 無効デバイストークン検出時の自動削除処理
   - _Requirements: 5.1, 5.2, 5.3, 5.5_
 
-- [ ] 10.3 (P) NotificationService - メール通知配信
+- [x] 10.3 (P) NotificationService - メール通知配信
   - AWS SES統合
   - トランザクションメール送信（テンプレート使用）
   - ユーザー通知設定反映（emailEnabled確認）
@@ -329,7 +329,7 @@
   - バウンス・苦情通知ハンドリング（SES Feedback処理）
   - _Requirements: 5.1, 5.2, 6.6_
 
-- [ ] 10.4 NotificationService - イベント購読実装
+- [x] 10.4 NotificationService - イベント購読実装
   - CropHarvestReminderイベント購読（収穫7日前通知）
   - TaskDueReminderイベント購読（当日タスク通知）
   - TaskOverdueAlertイベント購読（期限切れ警告）
