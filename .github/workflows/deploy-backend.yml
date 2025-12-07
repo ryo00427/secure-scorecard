@@ -1,0 +1,117 @@
+# =============================================================================
+# Backend Deploy Workflow
+# =============================================================================
+# mainブランチへのプッシュ時に自動でECR→ECSデプロイを実行します。
+#
+# 必要なGitHub Secrets:
+#   - AWS_ACCESS_KEY_ID
+#   - AWS_SECRET_ACCESS_KEY
+#   - AWS_ACCOUNT_ID
+#
+# =============================================================================
+
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:  # 手動実行も可能
+
+env:
+  AWS_REGION: ap-northeast-1
+  PROJECT_NAME: home-garden
+  ENVIRONMENT: dev
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # チェックアウト
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # AWS認証
+      # -----------------------------------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # -----------------------------------------------------------------------
+      # ECRログイン
+      # -----------------------------------------------------------------------
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # -----------------------------------------------------------------------
+      # Dockerイメージビルド・プッシュ
+      # -----------------------------------------------------------------------
+      - name: Build and push Docker image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd apps/backend
+
+          # ビルド
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          # プッシュ
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      # -----------------------------------------------------------------------
+      # ECSタスク定義更新
+      # -----------------------------------------------------------------------
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-backend \
+            --query taskDefinition > task-definition.json
+
+      - name: Update task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: backend
+          image: ${{ steps.build-image.outputs.image }}
+
+      # -----------------------------------------------------------------------
+      # ECSサービスデプロイ
+      # -----------------------------------------------------------------------
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-backend
+          cluster: ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-cluster
+          wait-for-service-stability: true
+
+      # -----------------------------------------------------------------------
+      # デプロイ完了通知
+      # -----------------------------------------------------------------------
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: \`${{ steps.build-image.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cluster**: \`${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-cluster\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: \`${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-backend\`" >> $GITHUB_STEP_SUMMARY
