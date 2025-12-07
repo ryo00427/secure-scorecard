@@ -25,13 +25,14 @@ type ErrorResponse struct {
 
 // Error code constants
 const (
-	ErrCodeValidation     = "VALIDATION_ERROR"
-	ErrCodeAuthentication = "AUTHENTICATION_ERROR"
-	ErrCodeAuthorization  = "AUTHORIZATION_ERROR"
-	ErrCodeNotFound       = "NOT_FOUND"
-	ErrCodeConflict       = "CONFLICT"
-	ErrCodeInternal       = "INTERNAL_ERROR"
-	ErrCodeBadRequest     = "BAD_REQUEST"
+	ErrCodeValidation         = "VALIDATION_ERROR"
+	ErrCodeAuthentication     = "AUTHENTICATION_ERROR"
+	ErrCodeAuthorization      = "AUTHORIZATION_ERROR"
+	ErrCodeNotFound           = "NOT_FOUND"
+	ErrCodeConflict           = "CONFLICT"
+	ErrCodeInternal           = "INTERNAL_ERROR"
+	ErrCodeBadRequest         = "BAD_REQUEST"
+	ErrCodeServiceUnavailable = "SERVICE_UNAVAILABLE"
 )
 
 // NewValidationError creates a validation error
@@ -95,5 +96,15 @@ func NewBadRequestError(message string) *AppError {
 		Code:       ErrCodeBadRequest,
 		Message:    message,
 		StatusCode: http.StatusBadRequest,
+	}
+}
+
+// NewServiceUnavailableError creates a service unavailable error
+// 外部サービス（S3等）が利用不可の場合に使用します
+func NewServiceUnavailableError(message string) *AppError {
+	return &AppError{
+		Code:       ErrCodeServiceUnavailable,
+		Message:    message,
+		StatusCode: http.StatusServiceUnavailable,
 	}
 }

@@ -4,19 +4,22 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/secure-scorecard/backend/internal/auth"
 	"github.com/secure-scorecard/backend/internal/service"
+	"github.com/secure-scorecard/backend/internal/storage"
 )
 
 // Handler holds all HTTP handlers
 type Handler struct {
 	service    *service.Service
 	jwtManager *auth.JWTManager
+	s3Service  *storage.S3Service
 }
 
 // NewHandler creates a new Handler instance
-func NewHandler(svc *service.Service, jwtManager *auth.JWTManager) *Handler {
+func NewHandler(svc *service.Service, jwtManager *auth.JWTManager, s3Svc *storage.S3Service) *Handler {
 	return &Handler{
 		service:    svc,
 		jwtManager: jwtManager,
+		s3Service:  s3Svc,
 	}
 }
 
@@ -93,6 +96,11 @@ func (h *Handler) RegisterRoutes(e *echo.Echo) {
 	crops.GET("/:id", h.GetCrop)     // 特定作物取得
 	crops.PUT("/:id", h.UpdateCrop)  // 作物更新
 	crops.DELETE("/:id", h.DeleteCrop) // 作物削除
+
+	// Image upload endpoints (nested under crops)
+	// 画像アップロードエンドポイント - S3 Presigned URL生成・直接アップロード
+	crops.POST("/images/presign", h.GenerateImageUploadURL) // Presigned URL生成（クライアント直接アップロード用）
+	crops.POST("/images", h.UploadImage)                     // サーバー経由アップロード（multipart/form-data）
 
 	// Growth records endpoints (nested under crops)
 	// 成長記録エンドポイント - 作物の成長観察記録

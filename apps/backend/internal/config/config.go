@@ -14,6 +14,17 @@ type Config struct {
 	Database DatabaseConfig
 	JWT      JWTConfig
 	CORS     CORSConfig
+	S3       S3Config
+}
+
+// S3Config はS3/CloudFront設定を保持します
+type S3Config struct {
+	Region          string // AWSリージョン
+	BucketName      string // S3バケット名
+	AccessKeyID     string // AWSアクセスキーID
+	SecretAccessKey string // AWSシークレットアクセスキー
+	CloudFrontURL   string // CloudFront DistributionのURL（オプション）
+	Endpoint        string // カスタムエンドポイント（LocalStack等用、オプション）
 }
 
 // ServerConfig holds server-specific configuration
@@ -68,6 +79,14 @@ func Load() (*Config, error) {
 		},
 		CORS: CORSConfig{
 			AllowedOrigins: getEnvAsSlice("CORS_ALLOWED_ORIGINS", []string{"http://localhost:3000", "http://localhost:8081"}),
+		},
+		S3: S3Config{
+			Region:          getEnv("AWS_REGION", "ap-northeast-1"),
+			BucketName:      getEnv("S3_BUCKET_NAME", ""),
+			AccessKeyID:     getEnv("AWS_ACCESS_KEY_ID", ""),
+			SecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),
+			CloudFrontURL:   getEnv("CLOUDFRONT_URL", ""),
+			Endpoint:        getEnv("S3_ENDPOINT", ""), // LocalStack用
 		},
 	}
 
