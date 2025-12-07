@@ -31,6 +31,56 @@
 
 ## 過去の失敗から学んだ教訓
 
+### 10. 機能開発時は必ず feature ブランチを作成する（最重要）
+
+**失敗例**: Task 12 (React Native Mobile) の実装を直接 `main` ブランチにコミットしてしまった
+
+**原因**:
+
+- ブランチを作成せずに作業を開始した
+- コミット時にブランチを確認しなかった
+- 「タスクを進める」ことに集中しすぎてワークフローを忘れた
+
+**対策**: 実装開始前に必ずブランチを作成する
+
+```bash
+# ✅ 正しいワークフロー
+git checkout main
+git pull origin main
+git checkout -b feature/task-XX-feature-name  # 必ずブランチ作成
+# ... 実装 ...
+git add .
+git commit -m "feat: ..."
+git push -u origin feature/task-XX-feature-name
+# PRを作成してレビュー後にマージ
+
+# 🔴 やってはいけない
+git checkout main
+# ... 実装 ...
+git commit -m "feat: ..."  # main に直接コミット ❌
+git push origin main       # main に直接プッシュ ❌
+```
+
+**ブランチ命名規則**:
+
+```
+feature/task-XX-機能名    # 新機能
+fix/task-XX-バグ名        # バグ修正
+refactor/task-XX-対象名   # リファクタリング
+docs/task-XX-対象名       # ドキュメント
+```
+
+**実装開始時のチェックリスト**:
+
+```
+□ 現在のブランチを確認: git branch
+□ main にいる場合は feature ブランチを作成
+□ ブランチ名にタスク番号を含める
+□ コミット前にブランチを再確認
+```
+
+**重要**: `main` ブランチへの直接コミットは禁止。必ず PR 経由でマージする。
+
 ## コード実装の際には設計原則を遵守する事
 
 以下の.mdを必ず参照する事
