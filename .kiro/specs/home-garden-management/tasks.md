@@ -304,14 +304,14 @@
 
 ## 10. バックエンド - NotificationService実装
 
-- [ ] 10.1 (P) NotificationService - デバイストークン管理
-  - デバイストークン登録ロジック実装（DynamoDB保存）
+- [x] 10.1 (P) NotificationService - デバイストークン管理
+  - デバイストークン登録ロジック実装（PostgreSQL保存）
   - デバイストークン削除ロジック実装（無効トークン対応）
   - (userID, platform) 複合キーでの管理
   - トークン有効性検証
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 10.2 NotificationService - プッシュ通知配信
+- [x] 10.2 NotificationService - プッシュ通知配信
   - AWS SNS統合（Platform Application経由）
   - FCM/APNS向けメッセージフォーマット変換
   - data-onlyメッセージ設定（priority: high, content-available: true）
@@ -321,7 +321,7 @@
   - 無効デバイストークン検出時の自動削除処理
   - _Requirements: 5.1, 5.2, 5.3, 5.5_
 
-- [ ] 10.3 (P) NotificationService - メール通知配信
+- [x] 10.3 (P) NotificationService - メール通知配信
   - AWS SES統合
   - トランザクションメール送信（テンプレート使用）
   - ユーザー通知設定反映（emailEnabled確認）
@@ -329,7 +329,7 @@
   - バウンス・苦情通知ハンドリング（SES Feedback処理）
   - _Requirements: 5.1, 5.2, 6.6_
 
-- [ ] 10.4 NotificationService - イベント購読実装
+- [x] 10.4 NotificationService - イベント購読実装
   - CropHarvestReminderイベント購読（収穫7日前通知）
   - TaskDueReminderイベント購読（当日タスク通知）
   - TaskOverdueAlertイベント購読（期限切れ警告）
@@ -337,13 +337,14 @@
   - SNS/SQSイベントハンドラー実装
   - _Requirements: 1.5, 5.1, 5.2, 5.3, 5.5_
 
-- [ ] 10.5 (P) NotificationService - 通知設定カスタマイズ
-  - `PUT /api/users/settings` 通知設定更新エンドポイント
+- [x] 10.5 (P) NotificationService - 通知設定カスタマイズ
+  - `PUT /api/users/settings/notifications` 通知設定更新エンドポイント
+  - `GET /api/users/settings/notifications` 通知設定取得エンドポイント
   - notification_settings JSONB更新
   - 設定項目（pushEnabled, emailEnabled, taskReminders, harvestReminders, growthRecordNotifications）
   - _Requirements: 5.4_
 
-- [ ] 10.6* NotificationService - 統合テスト
+- [x] 10.6* NotificationService - 統合テスト
   - デバイストークン登録→プッシュ通知配信フロー確認
   - イベント発行→通知配信フロー確認（Cron job実行含む）
   - ユーザー設定による通知スキップ確認

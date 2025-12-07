@@ -15,13 +15,15 @@ import (
 
 // SchedulerHandler はスケジューラー処理のハンドラーです。
 type SchedulerHandler struct {
-	service *service.Service
+	service      *service.Service
+	eventHandler service.NotificationEventHandler
 }
 
 // NewSchedulerHandler は新しい SchedulerHandler を作成します。
-func NewSchedulerHandler(svc *service.Service) *SchedulerHandler {
+func NewSchedulerHandler(svc *service.Service, eventHandler service.NotificationEventHandler) *SchedulerHandler {
 	return &SchedulerHandler{
-		service: svc,
+		service:      svc,
+		eventHandler: eventHandler,
 	}
 }
 
@@ -77,7 +79,25 @@ type ProcessNotificationsResponse struct {
 func (h *SchedulerHandler) ProcessScheduledNotifications(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	// スケジューラー処理を実行
+	// NotificationEventHandler が設定されている場合は実際に通知を送信
+	if h.eventHandler != nil {
+		result, err := h.eventHandler.ProcessScheduledNotificationsAndSend(ctx)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, ProcessNotificationsResponse{
+				Success: false,
+				Message: "処理中にエラーが発生しました: " + err.Error(),
+			})
+		}
+
+		return c.JSON(http.StatusOK, ProcessNotificationsResponse{
+			Success:            true,
+			ProcessedAt:        result.ProcessedAt.Format("2006-01-02T15:04:05Z07:00"),
+			TotalEvents:        result.TotalEvents,
+			Message:            "処理が正常に完了しました（通知送信済み）",
+		})
+	}
+
+	// eventHandler がない場合はイベント生成のみ（後方互換性）
 	result, err := h.service.ProcessScheduledNotifications(ctx)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, ProcessNotificationsResponse{
@@ -86,22 +106,15 @@ func (h *SchedulerHandler) ProcessScheduledNotifications(c echo.Context) error {
 		})
 	}
 
-	// レスポンスを返す
-	response := ProcessNotificationsResponse{
+	return c.JSON(http.StatusOK, ProcessNotificationsResponse{
 		Success:            true,
 		ProcessedAt:        result.ProcessedAt.Format("2006-01-02T15:04:05Z07:00"),
 		OverdueTaskAlerts:  result.OverdueTaskAlerts,
 		TodayTaskReminders: result.TodayTaskReminders,
 		HarvestReminders:   result.HarvestReminders,
 		TotalEvents:        len(result.Events),
-		Message:            "処理が正常に完了しました",
-	}
-
-	// TODO: NotificationService が実装されたら、result.Events を使って
-	// 実際の通知（プッシュ、メール）を送信する
-	// 現時点では通知イベントを生成するだけで、実際の送信は行わない
-
-	return c.JSON(http.StatusOK, response)
+		Message:            "処理が正常に完了しました（通知未送信）",
+	})
 }
 
 // GetSchedulerStatus はスケジューラーのステータスを返します。
@@ -124,8 +137,13 @@ func (h *SchedulerHandler) GetSchedulerStatus(c echo.Context) error {
 
 // RegisterSchedulerRoutes はスケジューラー関連のルートを登録します。
 // handler.go の RegisterRoutes から呼び出されます。
-func (h *Handler) RegisterSchedulerRoutes(e *echo.Echo, schedulerToken string) {
-	schedulerHandler := NewSchedulerHandler(h.service)
+//
+// 引数:
+//   - e: Echoインスタンス
+//   - schedulerToken: スケジューラー認証トークン
+//   - eventHandler: 通知イベントハンドラー（nilの場合は通知送信なし）
+func (h *Handler) RegisterSchedulerRoutes(e *echo.Echo, schedulerToken string, eventHandler service.NotificationEventHandler) {
+	schedulerHandler := NewSchedulerHandler(h.service, eventHandler)
 
 	// スケジューラー専用エンドポイント（認証はトークンベース）
 	scheduler := e.Group("/api/v1/scheduler")
