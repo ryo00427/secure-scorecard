@@ -20,19 +20,11 @@ import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../services/api';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 
-// -----------------------------------------------------------------------------
-// Types - 型定義
-// -----------------------------------------------------------------------------
-
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 interface Props {
   navigation: LoginScreenNavigationProp;
 }
-
-// -----------------------------------------------------------------------------
-// Component - コンポーネント
-// -----------------------------------------------------------------------------
 
 export default function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();

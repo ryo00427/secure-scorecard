@@ -22,10 +22,6 @@ import CropsScreen from '../screens/main/CropsScreen';
 import AnalyticsScreen from '../screens/main/AnalyticsScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
 
-// -----------------------------------------------------------------------------
-// Types - 型定義
-// -----------------------------------------------------------------------------
-
 // 認証スタックのパラメータ
 export type AuthStackParamList = {
   Login: undefined;
@@ -46,10 +42,6 @@ export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
 };
-
-// -----------------------------------------------------------------------------
-// Navigators - ナビゲーター
-// -----------------------------------------------------------------------------
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -136,10 +128,6 @@ function MainTabNavigator() {
     </Tab.Navigator>
   );
 }
-
-// -----------------------------------------------------------------------------
-// AppNavigator - メインナビゲーター
-// -----------------------------------------------------------------------------
 
 export default function AppNavigator() {
   const { isLoading, isAuthenticated } = useAuth();

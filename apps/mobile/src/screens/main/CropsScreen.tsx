@@ -16,15 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { cropsApi } from '../../services/api';
 
-// -----------------------------------------------------------------------------
-// Types - 型定義
-// -----------------------------------------------------------------------------
-
 type FilterType = 'all' | 'growing' | 'harvested';
-
-// -----------------------------------------------------------------------------
-// Component - コンポーネント
-// -----------------------------------------------------------------------------
 
 export default function CropsScreen() {
   const [filter, setFilter] = useState<FilterType>('all');

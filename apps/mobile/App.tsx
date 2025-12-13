@@ -12,10 +12,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
-// -----------------------------------------------------------------------------
-// React Query Client - クエリクライアント
-// -----------------------------------------------------------------------------
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -28,10 +24,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-// -----------------------------------------------------------------------------
-// App - アプリケーションコンポーネント
-// -----------------------------------------------------------------------------
 
 export default function App() {
   return (

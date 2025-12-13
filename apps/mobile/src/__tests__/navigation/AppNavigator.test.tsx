@@ -9,10 +9,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppNavigator from '../../navigation/AppNavigator';
 import { AuthProvider } from '../../context/AuthContext';
 
-// -----------------------------------------------------------------------------
-// Mocks - モック
-// -----------------------------------------------------------------------------
-
 // SecureStore モック - 未認証状態
 const mockGetItemAsync = jest.fn().mockResolvedValue(null);
 const mockSetItemAsync = jest.fn().mockResolvedValue(undefined);
@@ -58,10 +54,6 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-// -----------------------------------------------------------------------------
-// Test Utilities - テストユーティリティ
-// -----------------------------------------------------------------------------
-
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -80,10 +72,6 @@ const renderWithProviders = (component: React.ReactElement) => {
     </QueryClientProvider>
   );
 };
-
-// -----------------------------------------------------------------------------
-// Tests - テスト
-// -----------------------------------------------------------------------------
 
 describe('AppNavigator', () => {
   beforeEach(() => {

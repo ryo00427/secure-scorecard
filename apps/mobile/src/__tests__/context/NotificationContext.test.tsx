@@ -11,10 +11,6 @@ import {
   useNotifications,
 } from '../../context/NotificationContext';
 
-// -----------------------------------------------------------------------------
-// Mocks - モック
-// -----------------------------------------------------------------------------
-
 // expo-notifications モック
 const mockGetExpoPushTokenAsync = jest.fn().mockResolvedValue({
   data: 'ExponentPushToken[xxxxxxxxxxxxxx]',
@@ -97,10 +93,6 @@ jest.mock('../../services/notifications', () => ({
   setupAndroidNotificationChannel: jest.fn().mockResolvedValue(undefined),
 }));
 
-// -----------------------------------------------------------------------------
-// Test Component - テストコンポーネント
-// -----------------------------------------------------------------------------
-
 function TestComponent() {
   const { expoPushToken, isInitialized, initialize } = useNotifications();
 
@@ -111,10 +103,6 @@ function TestComponent() {
     </View>
   );
 }
-
-// -----------------------------------------------------------------------------
-// Tests - テスト
-// -----------------------------------------------------------------------------
 
 describe('NotificationContext', () => {
   beforeEach(() => {

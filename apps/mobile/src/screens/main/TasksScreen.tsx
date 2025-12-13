@@ -16,15 +16,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { tasksApi } from '../../services/api';
 
-// -----------------------------------------------------------------------------
-// Types - 型定義
-// -----------------------------------------------------------------------------
-
 type FilterType = 'all' | 'today' | 'overdue';
-
-// -----------------------------------------------------------------------------
-// Component - コンポーネント
-// -----------------------------------------------------------------------------
 
 export default function TasksScreen() {
   const queryClient = useQueryClient();

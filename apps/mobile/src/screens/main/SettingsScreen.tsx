@@ -17,10 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { notificationApi, authApi } from '../../services/api';
 
-// -----------------------------------------------------------------------------
-// Component - コンポーネント
-// -----------------------------------------------------------------------------
-
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();

@@ -8,10 +8,6 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react-nativ
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AnalyticsScreen from '../../screens/main/AnalyticsScreen';
 
-// -----------------------------------------------------------------------------
-// Mocks - モック
-// -----------------------------------------------------------------------------
-
 // API モック
 const mockGetHarvestSummary = jest.fn().mockResolvedValue({
   summaries: [
@@ -72,10 +68,6 @@ jest.mock('react-native', () => {
   };
 });
 
-// -----------------------------------------------------------------------------
-// Test Utilities - テストユーティリティ
-// -----------------------------------------------------------------------------
-
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -92,10 +84,6 @@ const renderWithProviders = (component: React.ReactElement) => {
     <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>
   );
 };
-
-// -----------------------------------------------------------------------------
-// Tests - テスト
-// -----------------------------------------------------------------------------
 
 describe('AnalyticsScreen', () => {
   beforeEach(() => {

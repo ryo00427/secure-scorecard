@@ -20,19 +20,11 @@ import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../services/api';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 
-// -----------------------------------------------------------------------------
-// Types - 型定義
-// -----------------------------------------------------------------------------
-
 type RegisterScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
 interface Props {
   navigation: RegisterScreenNavigationProp;
 }
-
-// -----------------------------------------------------------------------------
-// Component - コンポーネント
-// -----------------------------------------------------------------------------
 
 export default function RegisterScreen({ navigation }: Props) {
   const { login } = useAuth();
