@@ -10,10 +10,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { tasksApi, cropsApi } from '../../services/api';
 
-// -----------------------------------------------------------------------------
-// Component - コンポーネント
-// -----------------------------------------------------------------------------
-
 export default function HomeScreen() {
   const { user } = useAuth();
 

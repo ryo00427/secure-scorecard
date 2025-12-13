@@ -25,10 +25,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// =============================================================================
-// MockUserRepository - ユーザーリポジトリのモック実装
-// =============================================================================
-
 // MockUserRepository は UserRepository インターフェースのモック実装です。
 // テスト時にデータベースの代わりにメモリ内のMapを使用します。
 type MockUserRepository struct {
@@ -179,10 +175,6 @@ func (r *MockUserRepository) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
-// =============================================================================
-// MockTokenBlacklistRepository - トークンブラックリストのモック実装
-// =============================================================================
-
 // MockTokenBlacklistRepository は TokenBlacklistRepository のモック実装です。
 // ログアウト時のトークン無効化機能をテストするために使用します。
 type MockTokenBlacklistRepository struct {
@@ -224,13 +216,6 @@ func (r *MockTokenBlacklistRepository) DeleteExpired(ctx context.Context) error 
 	return nil
 }
 
-// =============================================================================
-// スタブ実装 - 認証テストでは使用しないリポジトリ
-// =============================================================================
-// 以下のモックは Repositories インターフェースを満たすために必要ですが、
-// 認証テストでは使用しないため、最小限のスタブ実装となっています。
-// Garden/Plant/CareLog のテストを書く際に、必要に応じて拡張してください。
-
 // MockGardenRepository は GardenRepository のスタブ実装です。
 type MockGardenRepository struct{}
 
@@ -271,10 +256,6 @@ func (r *MockCareLogRepository) GetByPlantID(ctx context.Context, plantID uint) 
 	return nil, nil
 }
 func (r *MockCareLogRepository) Delete(ctx context.Context, id uint) error { return nil }
-
-// =============================================================================
-// MockTaskRepository - タスクリポジトリのモック実装
-// =============================================================================
 
 // MockTaskRepository は TaskRepository インターフェースのモック実装です。
 // タスク管理機能のテストに使用します。
@@ -450,10 +431,6 @@ func (r *MockTaskRepository) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
-// =============================================================================
-// MockCropRepository - 作物リポジトリのモック実装
-// =============================================================================
-
 // MockCropRepository は CropRepository インターフェースのモック実装です。
 // 作物管理機能のテストに使用します。
 type MockCropRepository struct {
@@ -589,10 +566,6 @@ func (r *MockCropRepository) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
-// =============================================================================
-// MockGrowthRecordRepository - 成長記録リポジトリのモック実装
-// =============================================================================
-
 // MockGrowthRecordRepository は GrowthRecordRepository インターフェースのモック実装です。
 type MockGrowthRecordRepository struct {
 	// Records はIDをキーとした成長記録の格納Map
@@ -669,10 +642,6 @@ func (r *MockGrowthRecordRepository) DeleteByCropID(ctx context.Context, cropID 
 	delete(r.RecordsByCropID, cropID)
 	return nil
 }
-
-// =============================================================================
-// MockHarvestRepository - 収穫記録リポジトリのモック実装
-// =============================================================================
 
 // MockHarvestRepository は HarvestRepository インターフェースのモック実装です。
 type MockHarvestRepository struct {
@@ -795,10 +764,6 @@ func (r *MockHarvestRepository) AddHarvestForUser(userID uint, harvest *model.Ha
 	r.HarvestsByUserID[userID] = append(r.HarvestsByUserID[userID], harvest)
 }
 
-// =============================================================================
-// MockPlotRepository - 区画リポジトリのモック実装
-// =============================================================================
-
 // MockPlotRepository は PlotRepository インターフェースのモック実装です。
 // 区画管理機能のテストに使用します。
 type MockPlotRepository struct {
@@ -917,10 +882,6 @@ func (r *MockPlotRepository) Delete(ctx context.Context, id uint) error {
 	}
 	return nil
 }
-
-// =============================================================================
-// MockPlotAssignmentRepository - 区画配置リポジトリのモック実装
-// =============================================================================
 
 // MockPlotAssignmentRepository は PlotAssignmentRepository インターフェースのモック実装です。
 // 区画への作物配置管理機能のテストに使用します。
@@ -1048,10 +1009,6 @@ func (r *MockPlotAssignmentRepository) DeleteByPlotID(ctx context.Context, plotI
 	return nil
 }
 
-// =============================================================================
-// MockDeviceTokenRepository - デバイストークンリポジトリのモック実装
-// =============================================================================
-
 // MockDeviceTokenRepository は DeviceTokenRepository インターフェースのモック実装です。
 type MockDeviceTokenRepository struct {
 	Tokens          map[uint]*model.DeviceToken
@@ -1161,10 +1118,6 @@ func (r *MockDeviceTokenRepository) DeactivateToken(ctx context.Context, id uint
 	return nil
 }
 
-// =============================================================================
-// MockNotificationLogRepository - 通知ログリポジトリのモック実装
-// =============================================================================
-
 // MockNotificationLogRepository は NotificationLogRepository インターフェースのモック実装です。
 type MockNotificationLogRepository struct {
 	Logs                 map[uint]*model.NotificationLog
@@ -1257,10 +1210,6 @@ func (r *MockNotificationLogRepository) DeleteExpired(ctx context.Context) error
 	}
 	return nil
 }
-
-// =============================================================================
-// MockRepositories - 全モックを束ねるファサード
-// =============================================================================
 
 // MockRepositories は Repositories インターフェースのモック実装です。
 // 各リポジトリのモックを保持し、テストで依存性注入するために使用します。
@@ -1384,10 +1333,6 @@ func (m *MockRepositories) WithTransaction(ctx context.Context, fn func(ctx cont
 	// 単純に関数を実行するだけ（BEGIN/COMMIT/ROLLBACKなし）
 	return fn(ctx)
 }
-
-// =============================================================================
-// テスト用ヘルパーメソッド
-// =============================================================================
 
 // GetMockUserRepository はテストセットアップ用に内部のモックリポジトリを返します。
 //

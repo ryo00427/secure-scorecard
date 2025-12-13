@@ -9,10 +9,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomeScreen from '../../screens/main/HomeScreen';
 import { AuthProvider } from '../../context/AuthContext';
 
-// -----------------------------------------------------------------------------
-// Mocks - モック
-// -----------------------------------------------------------------------------
-
 // API モック
 jest.mock('../../services/api', () => ({
   tasksApi: {
@@ -60,10 +56,6 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
-// -----------------------------------------------------------------------------
-// Test Utilities - テストユーティリティ
-// -----------------------------------------------------------------------------
-
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -82,10 +74,6 @@ const renderWithProviders = (component: React.ReactElement) => {
     </QueryClientProvider>
   );
 };
-
-// -----------------------------------------------------------------------------
-// Tests - テスト
-// -----------------------------------------------------------------------------
 
 describe('HomeScreen', () => {
   beforeEach(() => {

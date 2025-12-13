@@ -39,7 +39,18 @@
       "Bash(git commit:*)",
       "Bash(grep:*)",
       "Bash(find:*)",
-      "Bash(go test:*)"
+      "Bash(go test:*)",
+      "Bash(go version:*)",
+      "Bash(git push:*)",
+      "Bash(git branch:*)",
+      "Bash(dir /b)",
+      "Bash(git fetch:*)",
+      "Bash(npx playwright install)",
+      "Bash(curl:*)",
+      "Bash(npx playwright test --reporter=list)",
+      "Bash(claude mcp remove:*)",
+      "Bash(claude mcp list:*)",
+      "Bash(Remove-Item -Recurse -Force \"c:\\Users\\sugi2\\OneDrive\\プログラミング\\自分のリポジトリ\\secure-scorecard\\tests\\e2e\")"
     ],
     "deny": [],
     "ask": []

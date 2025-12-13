@@ -6,19 +6,11 @@
 
 import * as SecureStore from 'expo-secure-store';
 
-// -----------------------------------------------------------------------------
-// Configuration - 設定
-// -----------------------------------------------------------------------------
-
 // API のベース URL（環境変数または固定値）
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 // トークン保存キー
 const TOKEN_KEY = 'auth_token';
-
-// -----------------------------------------------------------------------------
-// Types - 型定義
-// -----------------------------------------------------------------------------
 
 // API レスポンスの基本型
 interface ApiResponse<T> {
@@ -38,10 +30,6 @@ export class ApiError extends Error {
     this.name = 'ApiError';
   }
 }
-
-// -----------------------------------------------------------------------------
-// HTTP Methods - HTTP メソッド
-// -----------------------------------------------------------------------------
 
 // 共通のリクエストヘッダーを取得
 async function getHeaders(): Promise<Record<string, string>> {
@@ -133,10 +121,6 @@ export const api = {
   delete: del,
 };
 
-// -----------------------------------------------------------------------------
-// Auth API - 認証 API
-// -----------------------------------------------------------------------------
-
 interface LoginRequest {
   email: string;
   password: string;
@@ -171,10 +155,6 @@ export const authApi = {
   me: () => get<{ user: AuthResponse['user'] }>('/auth/me'),
 };
 
-// -----------------------------------------------------------------------------
-// Tasks API - タスク API
-// -----------------------------------------------------------------------------
-
 interface Task {
   id: number;
   title: string;
@@ -204,10 +184,6 @@ export const tasksApi = {
   delete: (id: number) => del<{ message: string }>(`/tasks/${id}`),
 };
 
-// -----------------------------------------------------------------------------
-// Crops API - 作物 API
-// -----------------------------------------------------------------------------
-
 interface Crop {
   id: number;
   name: string;
@@ -233,10 +209,6 @@ export const cropsApi = {
   // 作物を削除
   delete: (id: number) => del<{ message: string }>(`/crops/${id}`),
 };
-
-// -----------------------------------------------------------------------------
-// Notification API - 通知 API
-// -----------------------------------------------------------------------------
 
 export const notificationApi = {
   // デバイストークンを登録
@@ -266,10 +238,6 @@ export const notificationApi = {
     growth_record_notifications?: boolean;
   }) => put<{ message: string }>('/users/settings/notifications', settings),
 };
-
-// -----------------------------------------------------------------------------
-// Analytics API - 分析 API
-// -----------------------------------------------------------------------------
 
 // 収穫サマリー
 interface HarvestSummary {

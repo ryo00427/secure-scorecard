@@ -30,10 +30,6 @@ import {
 } from '../services/notifications';
 import { MainTabParamList } from '../navigation/AppNavigator';
 
-// -----------------------------------------------------------------------------
-// Types - 型定義
-// -----------------------------------------------------------------------------
-
 // 通知コンテキストの型
 interface NotificationContextType {
   // 状態
@@ -46,17 +42,9 @@ interface NotificationContextType {
   cleanup: () => Promise<void>;
 }
 
-// -----------------------------------------------------------------------------
-// Context - コンテキスト
-// -----------------------------------------------------------------------------
-
 const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined
 );
-
-// -----------------------------------------------------------------------------
-// Provider - プロバイダーコンポーネント
-// -----------------------------------------------------------------------------
 
 interface NotificationProviderProps {
   children: ReactNode;
@@ -78,10 +66,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     // NavigationContainer の外で使用された場合は null
     navigation = null;
   }
-
-  // ---------------------------------------------------------------------------
-  // Handlers - ハンドラー
-  // ---------------------------------------------------------------------------
 
   // 通知タップ時のハンドラー
   const handleNotificationResponse = useCallback(
@@ -111,10 +95,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     },
     []
   );
-
-  // ---------------------------------------------------------------------------
-  // Methods - メソッド
-  // ---------------------------------------------------------------------------
 
   // 通知サービスを初期化
   const initialize = useCallback(async (): Promise<boolean> => {
@@ -159,10 +139,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     }
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // Effects - 副作用
-  // ---------------------------------------------------------------------------
-
   // リスナーの設定
   useEffect(() => {
     // フォアグラウンド通知リスナー
@@ -182,10 +158,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     };
   }, [handleNotificationReceived, handleNotificationResponse]);
 
-  // ---------------------------------------------------------------------------
-  // Render - レンダリング
-  // ---------------------------------------------------------------------------
-
   const value: NotificationContextType = {
     expoPushToken,
     isInitialized,
@@ -200,10 +172,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     </NotificationContext.Provider>
   );
 }
-
-// -----------------------------------------------------------------------------
-// Hook - カスタムフック
-// -----------------------------------------------------------------------------
 
 /**
  * 通知コンテキストを使用するためのカスタムフック

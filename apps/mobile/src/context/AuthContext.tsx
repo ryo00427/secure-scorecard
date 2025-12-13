@@ -7,10 +7,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 
-// -----------------------------------------------------------------------------
-// Types - 型定義
-// -----------------------------------------------------------------------------
-
 // ユーザー情報
 interface User {
   id: number;
@@ -29,22 +25,10 @@ interface AuthContextType {
   updateUser: (user: User) => void;
 }
 
-// -----------------------------------------------------------------------------
-// Constants - 定数
-// -----------------------------------------------------------------------------
-
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 
-// -----------------------------------------------------------------------------
-// Context - コンテキスト
-// -----------------------------------------------------------------------------
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// -----------------------------------------------------------------------------
-// Provider - プロバイダーコンポーネント
-// -----------------------------------------------------------------------------
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -127,10 +111,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
-// -----------------------------------------------------------------------------
-// Hook - カスタムフック
-// -----------------------------------------------------------------------------
 
 export function useAuth() {
   const context = useContext(AuthContext);
