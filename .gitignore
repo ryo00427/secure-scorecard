@@ -9,7 +9,7 @@ build/
 .next/
 out/
 .turbo/
-
+.playwright-mcp
 # Environment variables
 .env
 .env.local

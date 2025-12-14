@@ -155,7 +155,10 @@ export default function SettingsScreen() {
           </View>
           <TouchableOpacity
             className="flex-row items-center border-b border-gray-100 px-4 py-3"
-            onPress={() => Alert.alert('利用規約', '利用規約ページは実装中です')}
+            onPress={() => Alert.alert(
+              '利用規約',
+              'マイガーデンアプリをご利用いただきありがとうございます。\n\n本アプリの利用規約については、正式リリース時に公開予定です。'
+            )}
           >
             <Ionicons name="document-text-outline" size={22} color="#374151" />
             <Text className="ml-3 flex-1 text-base text-gray-800">利用規約</Text>
@@ -163,7 +166,10 @@ export default function SettingsScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             className="flex-row items-center px-4 py-3"
-            onPress={() => Alert.alert('プライバシーポリシー', 'プライバシーポリシーページは実装中です')}
+            onPress={() => Alert.alert(
+              'プライバシーポリシー',
+              'お客様の個人情報は適切に管理されます。\n\n• 収集した情報は本アプリの機能提供のみに使用されます\n• 第三者への情報提供は行いません\n• データは暗号化して保存されます\n\n詳細なプライバシーポリシーは正式リリース時に公開予定です。'
+            )}
           >
             <Ionicons name="shield-checkmark-outline" size={22} color="#374151" />
             <Text className="ml-3 flex-1 text-base text-gray-800">プライバシーポリシー</Text>

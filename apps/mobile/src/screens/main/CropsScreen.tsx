@@ -1,6 +1,7 @@
 // =============================================================================
-// CropsScreen - 作物一覧画面
+// CropsScreen - 作物一覧画面（マイプラント）
 // =============================================================================
+// デザインファイル: design/stitch_/screen.png（ダッシュボードと同様のカード形式）
 // 作物の一覧表示と管理を提供します。
 
 import React, { useState } from 'react';
@@ -10,15 +11,29 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { cropsApi } from '../../services/api';
+import { CropCard } from '../../components';
 
+// フィルタータイプ
 type FilterType = 'all' | 'growing' | 'harvested';
 
+// ナビゲーションの型定義
+type RootStackParamList = {
+  CropDetail: { cropId: number };
+  AddCrop: undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export default function CropsScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const [filter, setFilter] = useState<FilterType>('all');
 
   // 作物一覧を取得
@@ -27,44 +42,56 @@ export default function CropsScreen() {
     queryFn: () => cropsApi.getAll(),
   });
 
-  const allCrops = cropsData?.crops || [];
-  const crops = filter === 'all'
-    ? allCrops
-    : allCrops.filter(c => c.status === filter);
+  // APIは配列を直接返すので、cropsData自体が配列
+  const allCrops = cropsData || [];
+  const crops =
+    filter === 'all'
+      ? allCrops
+      : allCrops.filter((c) => c.status === filter);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'planning':
-        return { bg: 'bg-blue-100', text: 'text-blue-700', label: '計画中' };
-      case 'growing':
-        return { bg: 'bg-green-100', text: 'text-green-700', label: '栽培中' };
-      case 'harvested':
-        return { bg: 'bg-orange-100', text: 'text-orange-700', label: '収穫済' };
-      default:
-        return { bg: 'bg-gray-100', text: 'text-gray-700', label: status };
-    }
+  // 作物詳細画面へ遷移
+  const handleCropPress = (cropId: number) => {
+    navigation.navigate('CropDetail', { cropId });
   };
 
+  // 作物追加画面へ遷移
+  const handleAddCrop = () => {
+    navigation.navigate('AddCrop');
+  };
+
+  // フィルターオプション
+  const filterOptions = [
+    { key: 'all' as FilterType, label: 'すべて' },
+    { key: 'growing' as FilterType, label: '栽培中' },
+    { key: 'harvested' as FilterType, label: '収穫済' },
+  ];
+
   return (
-    <View className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50">
+      <StatusBar barStyle="dark-content" />
+
+      {/* ヘッダー */}
+      <View className="flex-row items-center justify-between bg-white px-4 py-3">
+        <Text className="text-xl font-bold text-gray-800">マイプラント</Text>
+        <TouchableOpacity onPress={handleAddCrop} className="p-2">
+          <Ionicons name="add-circle-outline" size={28} color="#22c55e" />
+        </TouchableOpacity>
+      </View>
+
       {/* フィルタータブ */}
       <View className="flex-row border-b border-gray-200 bg-white px-4">
-        {[
-          { key: 'all', label: 'すべて' },
-          { key: 'growing', label: '栽培中' },
-          { key: 'harvested', label: '収穫済' },
-        ].map((item) => (
+        {filterOptions.map((item) => (
           <TouchableOpacity
             key={item.key}
-            className={`mr-4 py-3 ${
-              filter === item.key ? 'border-b-2 border-primary-600' : ''
+            className={`mr-6 py-3 ${
+              filter === item.key ? 'border-b-2 border-emerald-600' : ''
             }`}
-            onPress={() => setFilter(item.key as FilterType)}
+            onPress={() => setFilter(item.key)}
           >
             <Text
               className={`text-base ${
                 filter === item.key
-                  ? 'font-semibold text-primary-600'
+                  ? 'font-semibold text-emerald-600'
                   : 'text-gray-500'
               }`}
             >
@@ -79,71 +106,51 @@ export default function CropsScreen() {
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refetch} />
         }
+        showsVerticalScrollIndicator={false}
       >
         {crops.length > 0 ? (
-          crops.map((crop) => {
-            const badge = getStatusBadge(crop.status);
-            return (
-              <TouchableOpacity
+          <View className="pb-24">
+            {crops.map((crop) => (
+              <CropCard
                 key={crop.id}
-                className="mb-3 rounded-lg bg-white p-4 shadow-sm"
-                onPress={() => Alert.alert('作物詳細', `${crop.name}の詳細画面は実装中です`)}
-              >
-                <View className="flex-row items-center">
-                  {/* アイコン */}
-                  <View className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                    <Ionicons name="leaf" size={24} color="#16a34a" />
-                  </View>
-
-                  {/* 作物情報 */}
-                  <View className="flex-1">
-                    <Text className="text-lg font-medium text-gray-800">
-                      {crop.name}
-                    </Text>
-                    <Text className="text-sm text-gray-500">{crop.variety}</Text>
-                  </View>
-
-                  {/* ステータスバッジ */}
-                  <View className={`rounded-full px-3 py-1 ${badge.bg}`}>
-                    <Text className={`text-xs font-medium ${badge.text}`}>
-                      {badge.label}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* 日付情報 */}
-                <View className="mt-3 flex-row border-t border-gray-100 pt-3">
-                  <View className="flex-1 flex-row items-center">
-                    <Ionicons name="calendar-outline" size={14} color="#6b7280" />
-                    <Text className="ml-1 text-xs text-gray-500">
-                      植付: {new Date(crop.planted_date).toLocaleDateString('ja-JP')}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Ionicons name="flag-outline" size={14} color="#6b7280" />
-                    <Text className="ml-1 text-xs text-gray-500">
-                      収穫予定: {new Date(crop.expected_harvest_date).toLocaleDateString('ja-JP')}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })
+                id={crop.id}
+                name={crop.name}
+                variety={crop.variety}
+                plantedDate={crop.planted_date}
+                expectedHarvestDate={crop.expected_harvest_date}
+                status={crop.status}
+                onPress={() => handleCropPress(crop.id)}
+              />
+            ))}
+          </View>
         ) : (
-          <View className="items-center justify-center py-12">
-            <Ionicons name="leaf-outline" size={48} color="#d1d5db" />
-            <Text className="mt-4 text-gray-500">作物がありません</Text>
+          <View className="items-center justify-center py-16">
+            <Ionicons name="leaf-outline" size={64} color="#d1d5db" />
+            <Text className="mt-4 text-lg text-gray-500">
+              {filter === 'all'
+                ? '作物がありません'
+                : filter === 'growing'
+                ? '栽培中の作物がありません'
+                : '収穫済みの作物がありません'}
+            </Text>
+            <TouchableOpacity
+              onPress={handleAddCrop}
+              className="mt-6 rounded-full bg-emerald-600 px-8 py-3"
+            >
+              <Text className="font-medium text-white">作物を追加する</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
 
-      {/* 追加ボタン */}
+      {/* FAB（作物追加ボタン） */}
       <TouchableOpacity
-        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-primary-600 shadow-lg"
-        onPress={() => Alert.alert('作物登録', '作物登録画面は実装中です')}
+        onPress={handleAddCrop}
+        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-gray-800 shadow-lg"
+        activeOpacity={0.8}
       >
         <Ionicons name="add" size={28} color="white" />
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }

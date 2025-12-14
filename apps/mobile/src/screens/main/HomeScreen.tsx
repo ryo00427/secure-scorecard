@@ -1,28 +1,67 @@
 // =============================================================================
-// HomeScreen - ホーム画面
+// HomeScreen - ホーム画面（マイガーデン）
 // =============================================================================
-// ダッシュボード表示とクイックアクションを提供します。
+// デザインファイル: design/stitch_/screen.png
+// ダッシュボード表示：次の作業カード、栽培中の作物リスト
 
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  SafeAreaView,
+  StatusBar,
+} from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { tasksApi, cropsApi } from '../../services/api';
+import { CropCard, NextTaskCard } from '../../components';
+
+// ナビゲーションの型定義
+type RootStackParamList = {
+  Home: undefined;
+  CropDetail: { cropId: number };
+  AddCrop: undefined;
+  Settings: undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const navigation = useNavigation<NavigationProp>();
+  const queryClient = useQueryClient();
 
   // 今日のタスクを取得
-  const { data: todayTasks, isLoading: tasksLoading, refetch: refetchTasks } = useQuery({
+  const {
+    data: todayTasks,
+    isLoading: tasksLoading,
+    refetch: refetchTasks,
+  } = useQuery({
     queryKey: ['tasks', 'today'],
     queryFn: () => tasksApi.getToday(),
   });
 
   // 作物一覧を取得
-  const { data: crops, isLoading: cropsLoading, refetch: refetchCrops } = useQuery({
+  const {
+    data: crops,
+    isLoading: cropsLoading,
+    refetch: refetchCrops,
+  } = useQuery({
     queryKey: ['crops'],
     queryFn: () => cropsApi.getAll(),
+  });
+
+  // タスク完了ミューテーション
+  const completeTaskMutation = useMutation({
+    mutationFn: (taskId: number) => tasksApi.complete(taskId),
+    onSuccess: () => {
+      // タスクリストを再取得
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
   });
 
   const isLoading = tasksLoading || cropsLoading;
@@ -32,131 +71,125 @@ export default function HomeScreen() {
     refetchCrops();
   };
 
-  // 栽培中の作物数
-  const growingCrops = crops?.crops?.filter(c => c.status === 'growing').length || 0;
+  // 栽培中の作物のみをフィルタリング
+  // APIは配列を直接返すので、crops自体をフィルタリング
+  const growingCrops = crops?.filter((c) => c.status === 'growing') || [];
 
-  // 今日のタスク数
-  const todayTaskCount = todayTasks?.tasks?.length || 0;
+  // 次の作業（最初のタスク）
+  // APIは配列を直接返すので、todayTasks自体が配列
+  const nextTask = todayTasks?.[0];
+
+  // 作物詳細画面へ遷移
+  const handleCropPress = (cropId: number) => {
+    navigation.navigate('CropDetail', { cropId });
+  };
+
+  // 作物追加画面へ遷移
+  const handleAddCrop = () => {
+    navigation.navigate('AddCrop');
+  };
+
+  // 設定画面へ遷移
+  const handleSettings = () => {
+    navigation.navigate('Settings');
+  };
+
+  // タスク完了
+  const handleCompleteTask = () => {
+    if (nextTask) {
+      completeTaskMutation.mutate(nextTask.id);
+    }
+  };
 
   return (
-    <ScrollView
-      className="flex-1 bg-gray-50"
-      refreshControl={
-        <RefreshControl refreshing={isLoading} onRefresh={onRefresh} />
-      }
-    >
-      {/* ウェルカムヘッダー */}
-      <View className="bg-primary-600 px-6 pb-8 pt-4">
-        <Text className="text-lg text-white/80">こんにちは、</Text>
-        <Text className="text-2xl font-bold text-white">
-          {user?.displayName || 'ゲスト'}さん
-        </Text>
+    <SafeAreaView className="flex-1 bg-gray-50">
+      <StatusBar barStyle="dark-content" />
+
+      {/* ヘッダー */}
+      <View className="flex-row items-center justify-between px-4 py-3">
+        <TouchableOpacity className="p-2">
+          <Ionicons name="menu" size={24} color="#1f2937" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleSettings} className="p-2">
+          <Ionicons name="settings-outline" size={24} color="#1f2937" />
+        </TouchableOpacity>
       </View>
 
-      {/* サマリーカード */}
-      <View className="-mt-4 flex-row justify-between px-4">
-        <View className="mr-2 flex-1 rounded-xl bg-white p-4 shadow-sm">
-          <View className="flex-row items-center">
-            <View className="rounded-full bg-blue-100 p-2">
-              <Ionicons name="checkbox-outline" size={24} color="#3b82f6" />
-            </View>
-            <View className="ml-3">
-              <Text className="text-2xl font-bold text-gray-800">{todayTaskCount}</Text>
-              <Text className="text-sm text-gray-500">今日のタスク</Text>
-            </View>
-          </View>
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={onRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* タイトル */}
+        <View className="px-4 pb-4">
+          <Text className="text-3xl font-bold text-gray-800">マイガーデン</Text>
         </View>
 
-        <View className="ml-2 flex-1 rounded-xl bg-white p-4 shadow-sm">
-          <View className="flex-row items-center">
-            <View className="rounded-full bg-green-100 p-2">
-              <Ionicons name="leaf-outline" size={24} color="#16a34a" />
-            </View>
-            <View className="ml-3">
-              <Text className="text-2xl font-bold text-gray-800">{growingCrops}</Text>
-              <Text className="text-sm text-gray-500">栽培中</Text>
-            </View>
-          </View>
-        </View>
-      </View>
+        {/* 次の作業セクション */}
+        <View className="px-4">
+          <Text className="mb-3 text-lg font-bold text-gray-800">次の作業</Text>
 
-      {/* 今日のタスク */}
-      <View className="mt-6 px-4">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-lg font-bold text-gray-800">今日のタスク</Text>
-          <TouchableOpacity>
-            <Text className="text-primary-600">すべて見る</Text>
-          </TouchableOpacity>
+          {nextTask ? (
+            <NextTaskCard
+              title={nextTask.title}
+              description={nextTask.description}
+              onComplete={handleCompleteTask}
+            />
+          ) : (
+            <View className="rounded-xl bg-emerald-700 p-6">
+              <Text className="text-center text-white">
+                今日の作業はすべて完了しました！
+              </Text>
+            </View>
+          )}
         </View>
 
-        <View className="mt-3">
-          {todayTasks?.tasks && todayTasks.tasks.length > 0 ? (
-            todayTasks.tasks.slice(0, 3).map((task) => (
-              <View
-                key={task.id}
-                className="mb-2 flex-row items-center rounded-lg bg-white p-4 shadow-sm"
-              >
-                <View
-                  className={`h-3 w-3 rounded-full ${
-                    task.priority === 'high'
-                      ? 'bg-red-500'
-                      : task.priority === 'medium'
-                      ? 'bg-yellow-500'
-                      : 'bg-green-500'
-                  }`}
-                />
-                <Text className="ml-3 flex-1 text-gray-800">{task.title}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-              </View>
+        {/* 栽培中の作物セクション */}
+        <View className="mt-6 px-4 pb-24">
+          <Text className="mb-3 text-lg font-bold text-gray-800">
+            栽培中の作物
+          </Text>
+
+          {growingCrops.length > 0 ? (
+            growingCrops.map((crop) => (
+              <CropCard
+                key={crop.id}
+                id={crop.id}
+                name={crop.name}
+                variety={crop.variety}
+                plantedDate={crop.planted_date}
+                expectedHarvestDate={crop.expected_harvest_date}
+                status={crop.status}
+                onPress={() => handleCropPress(crop.id)}
+              />
             ))
           ) : (
-            <View className="rounded-lg bg-white p-6 shadow-sm">
-              <Text className="text-center text-gray-500">
-                今日のタスクはありません
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* 栽培中の作物 */}
-      <View className="mt-6 px-4 pb-6">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-lg font-bold text-gray-800">栽培中の作物</Text>
-          <TouchableOpacity>
-            <Text className="text-primary-600">すべて見る</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View className="mt-3">
-          {crops?.crops && crops.crops.filter(c => c.status === 'growing').length > 0 ? (
-            crops.crops
-              .filter(c => c.status === 'growing')
-              .slice(0, 3)
-              .map((crop) => (
-                <View
-                  key={crop.id}
-                  className="mb-2 flex-row items-center rounded-lg bg-white p-4 shadow-sm"
-                >
-                  <View className="rounded-full bg-green-100 p-2">
-                    <Ionicons name="leaf" size={20} color="#16a34a" />
-                  </View>
-                  <View className="ml-3 flex-1">
-                    <Text className="font-medium text-gray-800">{crop.name}</Text>
-                    <Text className="text-sm text-gray-500">{crop.variety}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-                </View>
-              ))
-          ) : (
-            <View className="rounded-lg bg-white p-6 shadow-sm">
-              <Text className="text-center text-gray-500">
+            <View className="items-center rounded-xl bg-white py-12 shadow-sm">
+              <Ionicons name="leaf-outline" size={48} color="#d1d5db" />
+              <Text className="mt-4 text-gray-500">
                 栽培中の作物はありません
               </Text>
+              <TouchableOpacity
+                onPress={handleAddCrop}
+                className="mt-4 rounded-full bg-emerald-600 px-6 py-2"
+              >
+                <Text className="font-medium text-white">作物を追加する</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+
+      {/* FAB（作物追加ボタン） */}
+      <TouchableOpacity
+        onPress={handleAddCrop}
+        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-gray-800 shadow-lg"
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color="white" />
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }

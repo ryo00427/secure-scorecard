@@ -4,7 +4,9 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/csv"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
@@ -88,6 +90,16 @@ func (s *Service) GetOrCreateUser(ctx context.Context, firebaseUID, email, displ
 	return result, err
 }
 
+// generateLocalUserID generates a unique ID for local (non-Firebase) users
+// ローカルユーザー用のユニークIDを生成します（Firebase UIDの代わり）
+func generateLocalUserID() (string, error) {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return "local_" + hex.EncodeToString(bytes), nil
+}
+
 // RegisterUser creates a new user with email and password (with transaction)
 func (s *Service) RegisterUser(ctx context.Context, email, hashedPassword, displayName string) (*model.User, error) {
 	var result *model.User
@@ -99,8 +111,16 @@ func (s *Service) RegisterUser(ctx context.Context, email, hashedPassword, displ
 			return ErrEmailAlreadyExists
 		}
 
+		// Generate unique local user ID to satisfy firebase_uid unique constraint
+		// ローカルユーザー用のユニークIDを生成（firebase_uidのユニーク制約を満たすため）
+		localUID, err := generateLocalUserID()
+		if err != nil {
+			return fmt.Errorf("failed to generate local user ID: %w", err)
+		}
+
 		// Create new user
 		newUser := &model.User{
+			FirebaseUID:  localUID,
 			Email:        email,
 			PasswordHash: hashedPassword,
 			DisplayName:  displayName,

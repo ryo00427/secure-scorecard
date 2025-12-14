@@ -5,12 +5,42 @@
 // 認証トークンの自動付与とエラーハンドリングを提供します。
 
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 // API のベース URL（環境変数または固定値）
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 // トークン保存キー
 const TOKEN_KEY = 'auth_token';
+
+// =============================================================================
+// プラットフォーム対応ストレージ
+// =============================================================================
+// Web: localStorage を使用
+// Native (iOS/Android): SecureStore を使用
+
+const storage = {
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      return window.localStorage.getItem(key);
+    }
+    return SecureStore.getItemAsync(key);
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.localStorage.setItem(key, value);
+      return;
+    }
+    await SecureStore.setItemAsync(key, value);
+  },
+  async removeItem(key: string): Promise<void> {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.localStorage.removeItem(key);
+      return;
+    }
+    await SecureStore.deleteItemAsync(key);
+  },
+};
 
 // API レスポンスの基本型
 interface ApiResponse<T> {
@@ -38,7 +68,7 @@ async function getHeaders(): Promise<Record<string, string>> {
   };
 
   // 認証トークンを取得して追加
-  const token = await SecureStore.getItemAsync(TOKEN_KEY);
+  const token = await storage.getItem(TOKEN_KEY);
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -58,8 +88,28 @@ async function handleResponse<T>(response: Response): Promise<T> {
     if (isJson) {
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
-        errorCode = errorData.error;
+        // バックエンドのエラー形式: { "error": { "code": "...", "message": "...", "details": [...] } }
+        if (errorData.error && typeof errorData.error === 'object') {
+          const appError = errorData.error;
+          errorMessage = appError.message || errorMessage;
+          errorCode = appError.code;
+          // バリデーションエラーの詳細がある場合は追加
+          if (appError.details && Array.isArray(appError.details)) {
+            const detailMessages = appError.details
+              .map((d: { field?: string; message?: string }) => d.message || d.field)
+              .filter(Boolean)
+              .join(', ');
+            if (detailMessages) {
+              errorMessage = `${errorMessage}: ${detailMessages}`;
+            }
+          }
+        } else if (typeof errorData.message === 'string') {
+          // 別の形式: { "message": "..." }
+          errorMessage = errorData.message;
+        } else if (typeof errorData.error === 'string') {
+          // 別の形式: { "error": "..." }
+          errorMessage = errorData.error;
+        }
       } catch {
         // JSON パースに失敗した場合はデフォルトメッセージを使用
       }
@@ -165,20 +215,20 @@ interface Task {
 }
 
 export const tasksApi = {
-  // タスク一覧を取得
-  getAll: () => get<{ tasks: Task[] }>('/tasks'),
+  // タスク一覧を取得（バックエンドは配列を直接返す）
+  getAll: () => get<Task[]>('/tasks'),
 
-  // 今日のタスクを取得
-  getToday: () => get<{ tasks: Task[] }>('/tasks/today'),
+  // 今日のタスクを取得（バックエンドは配列を直接返す）
+  getToday: () => get<Task[]>('/tasks/today'),
 
-  // 期限切れタスクを取得
-  getOverdue: () => get<{ tasks: Task[] }>('/tasks/overdue'),
+  // 期限切れタスクを取得（バックエンドは配列を直接返す）
+  getOverdue: () => get<Task[]>('/tasks/overdue'),
 
-  // タスクを作成
-  create: (data: Omit<Task, 'id' | 'status'>) => post<{ task: Task }>('/tasks', data),
+  // タスクを作成（バックエンドはオブジェクトを直接返す）
+  create: (data: Omit<Task, 'id' | 'status'>) => post<Task>('/tasks', data),
 
-  // タスクを完了
-  complete: (id: number) => post<{ task: Task }>(`/tasks/${id}/complete`),
+  // タスクを完了（バックエンドはオブジェクトを直接返す）
+  complete: (id: number) => post<Task>(`/tasks/${id}/complete`),
 
   // タスクを削除
   delete: (id: number) => del<{ message: string }>(`/tasks/${id}`),
@@ -194,17 +244,17 @@ interface Crop {
 }
 
 export const cropsApi = {
-  // 作物一覧を取得
-  getAll: () => get<{ crops: Crop[] }>('/crops'),
+  // 作物一覧を取得（バックエンドは配列を直接返す）
+  getAll: () => get<Crop[]>('/crops'),
 
-  // 作物詳細を取得
-  getById: (id: number) => get<{ crop: Crop }>(`/crops/${id}`),
+  // 作物詳細を取得（バックエンドはオブジェクトを直接返す）
+  getById: (id: number) => get<Crop>(`/crops/${id}`),
 
-  // 作物を作成
-  create: (data: Omit<Crop, 'id'>) => post<{ crop: Crop }>('/crops', data),
+  // 作物を作成（バックエンドはオブジェクトを直接返す）
+  create: (data: Omit<Crop, 'id'>) => post<Crop>('/crops', data),
 
-  // 作物を更新
-  update: (id: number, data: Partial<Crop>) => put<{ crop: Crop }>(`/crops/${id}`, data),
+  // 作物を更新（バックエンドはオブジェクトを直接返す）
+  update: (id: number, data: Partial<Crop>) => put<Crop>(`/crops/${id}`, data),
 
   // 作物を削除
   delete: (id: number) => del<{ message: string }>(`/crops/${id}`),

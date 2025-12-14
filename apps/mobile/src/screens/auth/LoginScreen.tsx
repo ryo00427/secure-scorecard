@@ -73,7 +73,7 @@ export default function LoginScreen({ navigation }: Props) {
           {/* ヘッダー */}
           <View className="mb-12 items-center">
             <Text className="text-3xl font-bold text-primary-600">家庭菜園管理</Text>
-            <Text className="mt-2 text-gray-500">Home Garden Management</Text>
+            <Text className="mt-2 text-gray-500">家庭菜園管理アプリ</Text>
           </View>
 
           {/* フォーム */}
