@@ -4,7 +4,9 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/csv"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
@@ -88,6 +90,16 @@ func (s *Service) GetOrCreateUser(ctx context.Context, firebaseUID, email, displ
 	return result, err
 }
 
+// generateLocalUserID generates a unique ID for local (non-Firebase) users
+// ローカルユーザー用のユニークIDを生成します（Firebase UIDの代わり）
+func generateLocalUserID() (string, error) {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return "local_" + hex.EncodeToString(bytes), nil
+}
+
 // RegisterUser creates a new user with email and password (with transaction)
 func (s *Service) RegisterUser(ctx context.Context, email, hashedPassword, displayName string) (*model.User, error) {
 	var result *model.User
@@ -99,8 +111,16 @@ func (s *Service) RegisterUser(ctx context.Context, email, hashedPassword, displ
 			return ErrEmailAlreadyExists
 		}
 
+		// Generate unique local user ID to satisfy firebase_uid unique constraint
+		// ローカルユーザー用のユニークIDを生成（firebase_uidのユニーク制約を満たすため）
+		localUID, err := generateLocalUserID()
+		if err != nil {
+			return fmt.Errorf("failed to generate local user ID: %w", err)
+		}
+
 		// Create new user
 		newUser := &model.User{
+			FirebaseUID:  localUID,
 			Email:        email,
 			PasswordHash: hashedPassword,
 			DisplayName:  displayName,
@@ -245,12 +265,6 @@ func (s *Service) BlacklistToken(ctx context.Context, tokenHash string, expiresA
 func (s *Service) CleanupExpiredTokens(ctx context.Context) error {
 	return s.repos.TokenBlacklist().DeleteExpired(ctx)
 }
-
-// =============================================================================
-// Task Service Methods - タスク管理サービスメソッド
-// =============================================================================
-// タスク（やることリスト）のCRUD操作を提供します。
-// タスクは植物の世話リマインダーや一般的なガーデニング作業に使用されます。
 
 // CreateTask は新しいタスクを作成します。
 //
@@ -487,12 +501,6 @@ func (s *Service) DeleteTask(ctx context.Context, id uint) error {
 	return s.repos.Task().Delete(ctx, id)
 }
 
-// =============================================================================
-// Crop Service Methods - 作物管理サービスメソッド
-// =============================================================================
-// 作物（Crop）の植え付けから収穫までのライフサイクルを管理します。
-// 成長記録（GrowthRecord）と収穫記録（Harvest）も含みます。
-
 // CreateCrop は新しい作物を登録します。
 //
 // 引数:
@@ -591,10 +599,6 @@ func (s *Service) DeleteCrop(ctx context.Context, id uint) error {
 	})
 }
 
-// =============================================================================
-// GrowthRecord Service Methods - 成長記録サービスメソッド
-// =============================================================================
-
 // CreateGrowthRecord は新しい成長記録を作成します。
 //
 // 引数:
@@ -631,10 +635,6 @@ func (s *Service) DeleteGrowthRecord(ctx context.Context, id uint) error {
 	return s.repos.GrowthRecord().Delete(ctx, id)
 }
 
-// =============================================================================
-// Harvest Service Methods - 収穫記録サービスメソッド
-// =============================================================================
-
 // CreateHarvest は新しい収穫記録を作成します。
 //
 // 引数:
@@ -670,12 +670,6 @@ func (s *Service) GetCropHarvests(ctx context.Context, cropID uint) ([]model.Har
 func (s *Service) DeleteHarvest(ctx context.Context, id uint) error {
 	return s.repos.Harvest().Delete(ctx, id)
 }
-
-// =============================================================================
-// Plot Service Methods - 区画管理サービスメソッド
-// =============================================================================
-// 菜園の区画（Plot）を管理します。
-// 区画は作物の配置場所として使用され、グリッドレイアウトをサポートします。
 
 // CreatePlot は新しい区画を作成します。
 //
@@ -765,12 +759,6 @@ func (s *Service) DeletePlot(ctx context.Context, id uint) error {
 		return s.repos.Plot().Delete(txCtx, id)
 	})
 }
-
-// =============================================================================
-// PlotAssignment Service Methods - 区画配置サービスメソッド
-// =============================================================================
-// 区画への作物配置を管理します。
-// 配置履歴を追跡し、過去の配置も記録します。
 
 // AssignCropToPlot は作物を区画に配置します。
 // 既存のアクティブな配置がある場合は、まずそれを解除します。
@@ -899,10 +887,6 @@ func (s *Service) GetCropAssignments(ctx context.Context, cropID uint) ([]model.
 	return s.repos.PlotAssignment().GetByCropID(ctx, cropID)
 }
 
-// =============================================================================
-// Plot Layout & History Methods - 区画レイアウト・履歴メソッド
-// =============================================================================
-
 // PlotLayoutItem はレイアウト表示用の区画データです。
 // 区画情報と現在の配置情報を含みます。
 type PlotLayoutItem struct {
@@ -995,11 +979,6 @@ func (s *Service) GetPlotHistory(ctx context.Context, plotID uint) ([]PlotHistor
 
 	return historyItems, nil
 }
-
-// =============================================================================
-// Analytics Service Methods - 分析サービスメソッド
-// =============================================================================
-// 収穫量の集計やグラフデータの生成を行います。
 
 // HarvestSummary は収穫量集計の結果を表します。
 type HarvestSummary struct {
@@ -1139,11 +1118,6 @@ func convertToKg(quantity float64, unit string) float64 {
 	}
 }
 
-// =============================================================================
-// Chart Data Types - グラフデータ型定義
-// =============================================================================
-// フロントエンドでのグラフ表示用のデータ構造を定義します。
-
 // ChartType はグラフデータの種類を表します。
 type ChartType string
 
@@ -1199,10 +1173,6 @@ type ChartFilter struct {
 	EndDate   *time.Time `json:"end_date,omitempty"`
 	Year      *int       `json:"year,omitempty"`
 }
-
-// =============================================================================
-// Chart Data Service Methods - グラフデータサービスメソッド
-// =============================================================================
 
 // GetChartData は指定された種類のグラフデータを取得します。
 //
@@ -1420,11 +1390,6 @@ func (s *Service) getPlotProductivityChart(ctx context.Context, userID uint, fil
 	}, nil
 }
 
-// =============================================================================
-// CSV Export Types - CSVエクスポート型定義
-// =============================================================================
-// データのCSVエクスポート機能を提供します。
-
 // ExportDataType はエクスポートするデータの種類を表します。
 type ExportDataType string
 
@@ -1448,10 +1413,6 @@ type CSVExportResult struct {
 	RecordCount int            `json:"record_count"`
 	GeneratedAt time.Time      `json:"generated_at"`
 }
-
-// =============================================================================
-// CSV Export Service Methods - CSVエクスポートサービスメソッド
-// =============================================================================
 
 // ExportCSV は指定されたデータ種類のCSVを生成します。
 //
@@ -1742,12 +1703,6 @@ func formatRecurrence(recurrenceType string, interval int) string {
 	return fmt.Sprintf("毎%s", typeStr)
 }
 
-// =============================================================================
-// Scheduler Service Methods - スケジューラーサービスメソッド
-// =============================================================================
-// AWS EventBridge Scheduler から呼び出される定期タスク処理を提供します。
-// 期限切れタスク検出、当日タスクリマインダー、収穫リマインダーなどを処理します。
-
 // NotificationEventType は通知イベントの種類を表します。
 type NotificationEventType string
 
@@ -2018,11 +1973,6 @@ func getCropIDs(crops []model.Crop) []uint {
 	return ids
 }
 
-// =============================================================================
-// Notification Service Methods - 通知サービスメソッド
-// =============================================================================
-// デバイストークン登録・管理と通知設定の更新を提供します。
-
 // RegisterDeviceToken はデバイストークンを登録または更新します。
 // 同じユーザー・プラットフォームの既存トークンがある場合は更新（upsert）します。
 //
@@ -2144,11 +2094,6 @@ func (s *Service) UpdateNotificationSettings(ctx context.Context, userID uint, s
 
 	return settings, nil
 }
-
-// =============================================================================
-// Notification Log Service Methods - 通知ログサービスメソッド
-// =============================================================================
-// 通知送信のログ管理と重複防止を提供します。
 
 // CreateNotificationLog は通知ログを作成します。
 // 重複防止キーを使用して、同じ通知が期間内に再送されないようにします。

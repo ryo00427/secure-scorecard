@@ -21,10 +21,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import { analyticsApi, HarvestSummary, ChartData } from '../../services/api';
 
-// -----------------------------------------------------------------------------
-// Constants - 定数
-// -----------------------------------------------------------------------------
-
 const screenWidth = Dimensions.get('window').width;
 
 // グラフ共通設定
@@ -54,16 +50,8 @@ const pieChartColors = [
   '#dcfce7', // green-100
 ];
 
-// -----------------------------------------------------------------------------
-// Types - 型定義
-// -----------------------------------------------------------------------------
-
 type ChartType = 'monthly_harvest' | 'crop_comparison' | 'plot_productivity';
 type ExportType = 'crops' | 'harvests' | 'tasks' | 'all';
-
-// -----------------------------------------------------------------------------
-// Component - コンポーネント
-// -----------------------------------------------------------------------------
 
 export default function AnalyticsScreen() {
   const [selectedChart, setSelectedChart] = useState<ChartType>('monthly_harvest');
@@ -114,10 +102,6 @@ export default function AnalyticsScreen() {
     refetchSummary();
     refetchChart();
   };
-
-  // ---------------------------------------------------------------------------
-  // Render Helpers - レンダリングヘルパー
-  // ---------------------------------------------------------------------------
 
   // グラフタイプ選択ボタン
   const renderChartTypeButton = (type: ChartType, label: string, icon: string) => (
@@ -227,10 +211,6 @@ export default function AnalyticsScreen() {
       </View>
     </TouchableOpacity>
   );
-
-  // ---------------------------------------------------------------------------
-  // Main Render - メインレンダリング
-  // ---------------------------------------------------------------------------
 
   return (
     <ScrollView

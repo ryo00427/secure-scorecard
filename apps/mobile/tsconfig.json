@@ -3,6 +3,7 @@
   "extends": "@secure-scorecard/typescript-config/react-native.json",
   "compilerOptions": {
     "strict": true,
+    "lib": ["ES2020", "DOM"],
     "types": ["jest"],
     "paths": {
       "@/*": [

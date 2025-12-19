@@ -36,7 +36,7 @@ type User struct {
 	IsActive             bool                  `gorm:"default:true" json:"is_active"`
 	FailedLoginCount     int                   `gorm:"default:0" json:"-"`
 	LockedUntil          *time.Time            `json:"-"`
-	NotificationSettings *NotificationSettings `gorm:"type:jsonb;default:'{\"push_enabled\":true,\"email_enabled\":true,\"task_reminders\":true,\"harvest_reminders\":true,\"growth_record_notifications\":false}'" json:"notification_settings,omitempty"`
+	NotificationSettings *NotificationSettings `gorm:"type:jsonb;serializer:json;default:'{\"push_enabled\":true,\"email_enabled\":true,\"task_reminders\":true,\"harvest_reminders\":true,\"growth_record_notifications\":false}'" json:"notification_settings,omitempty"`
 }
 
 // Garden represents a garden owned by a user
