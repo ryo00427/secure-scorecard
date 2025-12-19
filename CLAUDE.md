@@ -86,6 +86,7 @@ docs/task-XX-対象名       # ドキュメント
 **失敗例**: Task 12.5「モバイルUI画面実装」を完了としたが、実際のUIがデザインファイルと大きく乖離していた
 
 **発見された乖離**:
+
 - HomeScreen: デザインにあるプログレスバー、作物画像、注目タスクカードがない
 - CropsScreen: 画像、進捗表示がない
 - 詳細画面: タブ構成、成長曲線チャートが未実装
@@ -143,11 +144,13 @@ design/
 
 ```markdown
 # 🔴 悪い例（曖昧）
+
 - [ ] Task 12.5: モバイルUI画面実装
 
 # ✅ 良い例（具体的）
+
 - [ ] Task 12.5: モバイルUI画面実装
-  - デザインファイル: design/stitch_/screen.png
+  - デザインファイル: design/stitch\_/screen.png
   - 完了基準:
     □ プログレスバーコンポーネント実装
     □ 作物画像表示機能
@@ -160,6 +163,7 @@ design/
 ### 12. タスク完了の定義を厳格にする
 
 **失敗例**: 以下のような状態で「完了」とマークした
+
 - `Alert('実装中です')` が残っている
 - 基本的なCRUDは動くが、デザインの細部が未実装
 - エラーハンドリングが不完全
@@ -222,7 +226,7 @@ grep -r "Alert\(" apps/mobile/  # Alertは本番では使わない
 // 🔴 悪い例: バックエンドを確認せずに型を推測
 // api.ts
 export const cropsApi = {
-  getAll: () => get<{ crops: Crop[] }>('/crops'),  // { crops: [...] } を期待
+  getAll: () => get<{ crops: Crop[] }>('/crops'), // { crops: [...] } を期待
 };
 
 // HomeScreen.tsx
@@ -273,7 +277,7 @@ curl -s http://localhost:8080/api/v1/crops | jq
 ```typescript
 // ✅ 良い例: バックエンドの実装に合わせた型
 export const cropsApi = {
-  getAll: () => get<Crop[]>('/crops'),  // 配列を直接返す
+  getAll: () => get<Crop[]>('/crops'), // 配列を直接返す
 };
 
 // HomeScreen.tsx
@@ -338,7 +342,6 @@ func (s *Service) CreateTask(ctx context.Context, task *model.Task) error {
 □ 構造体: 何を表すか、各フィールドの意味
 □ 関数/メソッド: 処理内容、引数、戻り値の説明
 □ 複雑なロジック: なぜその実装になっているか
-□ セクション区切り: ==== で視覚的に分離
 ```
 
 **重要**: コードが複雑になるほど、コメントは必須
