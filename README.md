@@ -41,37 +41,6 @@ pnpm build
 # 開発サーバー起動（全パッケージ）
 pnpm dev
 ```
-
-## 📱 パッケージ別コマンド
-
-### バックエンド (Go)
-
-```bash
-cd apps/backend
-go run ./cmd/server          # 開発サーバー起動
-go test ./...                # テスト実行
-golangci-lint run            # リント実行
-```
-
-### モバイル (React Native + Expo)
-
-```bash
-cd apps/mobile
-pnpm start                   # Expo 開発サーバー起動
-pnpm android                 # Android エミュレータで起動
-pnpm ios                     # iOS シミュレータで起動
-pnpm test                    # テスト実行
-```
-
-### 共有ライブラリ (TypeScript)
-
-```bash
-cd packages/shared
-pnpm build                   # TypeScript ビルド
-pnpm dev                     # Watch モードでビルド
-pnpm test                    # テスト実行
-```
-
 ## 🏗️ Turborepo コマンド
 
 ```bash
@@ -104,16 +73,3 @@ pnpm format
 - **モノレポ**: Turborepo 2.x, pnpm 9.x
 - **インフラ**: AWS (ECS Fargate, RDS, S3, CloudFront)
 - **IaC**: Terraform
-
-## 🔧 仕様駆動開発 (Kiro)
-
-プロジェクトは `.kiro/` ディレクトリで管理されています:
-
-- `.kiro/steering/`: 設計原則（product.md, tech.md, structure.md）
-- `.kiro/specs/`: 機能仕様（requirements, design, tasks）
-
-詳細は [CLAUDE.md](./CLAUDE.md) を参照してください。
-
-## 📄 ライセンス
-
-MIT
