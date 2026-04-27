@@ -47,6 +47,13 @@ func main() {
 	// Setup middleware
 	middleware.SetupMiddleware(e, cfg)
 
+	// /health は DB 接続有無に関わらず常時 200 を返す。
+	// Render 等の PaaS はこのエンドポイントでヘルスチェックを行うため、
+	// DB がスリープからの復帰中でもサービス自体は健全と判定させる。
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	})
+
 	// Initialize database
 	db, err := database.Connect(cfg, nil)
 	if err != nil {
@@ -192,19 +199,13 @@ func cleanupExpiredTokens(svc *service.Service) {
 	}
 }
 
-// setupStandaloneRoutes sets up routes for standalone mode (without database)
+// setupStandaloneRoutes sets up routes for standalone mode (without database).
+// /health は main で常時登録しているのでここでは登録しない。
 func setupStandaloneRoutes(e *echo.Echo) {
 	e.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"message": "Welcome to Home Garden Management API",
 			"mode":    "standalone",
-		})
-	})
-
-	e.GET("/health", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"status": "ok",
-			"mode":   "standalone",
 		})
 	})
 }

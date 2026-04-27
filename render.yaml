@@ -1,0 +1,57 @@
+# =============================================================================
+# Render Blueprint - 無料デプロイ用設定
+# =============================================================================
+#
+# Render Dashboard で「New Blueprint Instance」を選び、このリポジトリを指定すると
+# このファイルに従って Web Service が自動作成される。
+#
+# シークレット類 (sync: false の env) は初回デプロイ前に Render UI で入力する:
+#   - DATABASE_URL: Neon の connection string (postgresql://...)
+#   - S3_BUCKET_NAME: Cloudflare R2 のバケット名
+#   - S3_ENDPOINT: https://<account_id>.r2.cloudflarestorage.com
+#   - AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY: R2 API トークン
+#   - CLOUDFRONT_URL: R2 の Public URL またはカスタムドメイン
+#
+# 公式仕様: https://render.com/docs/blueprint-spec
+# =============================================================================
+
+services:
+  - type: web
+    name: secure-scorecard-backend
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./apps/backend/Dockerfile
+    dockerContext: ./apps/backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # アプリケーション設定
+      - key: APP_ENV
+        value: production
+      # JWT_SECRET は Render が自動生成（強い乱数）
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRE_HOUR
+        value: "24"
+      # CORS: モバイルアプリは Origin ヘッダを送らないので * で問題なし
+      - key: CORS_ALLOWED_ORIGINS
+        value: "*"
+
+      # データベース (Neon)
+      - key: DATABASE_URL
+        sync: false
+
+      # オブジェクトストレージ (Cloudflare R2 / S3互換)
+      - key: AWS_REGION
+        value: auto
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: CLOUDFRONT_URL
+        sync: false

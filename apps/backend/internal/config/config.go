@@ -60,6 +60,9 @@ type ServerConfig struct {
 
 // DatabaseConfig holds database-specific configuration
 type DatabaseConfig struct {
+	// URL は DATABASE_URL（Neon等のフルコネクション文字列）。
+	// 設定されている場合はこちらが優先され、個別フィールドは無視される。
+	URL      string
 	Host     string
 	Port     string
 	User     string
@@ -81,16 +84,18 @@ type CORSConfig struct {
 
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
-	if err := godotenv.Load(); err != nil {
-		return nil, fmt.Errorf("failed to load .env file: %w", err)
-	}
+	// .env ファイルが無くても続行（本番環境では env を直接 inject する）
+	_ = godotenv.Load()
 
 	config := &Config{
 		Server: ServerConfig{
-			Port: getEnv("SERVER_PORT", "8080"),
+			// Render等のPaaSは PORT を inject する。SERVER_PORT が無ければ PORT、
+			// それも無ければ 8080。
+			Port: getEnv("PORT", getEnv("SERVER_PORT", "8080")),
 			Env:  getEnv("APP_ENV", "development"),
 		},
 		Database: DatabaseConfig{
+			URL:      getEnv("DATABASE_URL", ""),
 			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnv("DB_PORT", "5432"),
 			User:     getEnv("DB_USER", "postgres"),
@@ -130,8 +135,13 @@ func Load() (*Config, error) {
 	return config, nil
 }
 
-// DSN returns the PostgreSQL connection string
+// DSN returns the PostgreSQL connection string.
+// DATABASE_URL が設定されていればそれを返し（Neon等の postgresql:// URL 形式）、
+// 未設定の場合は個別の env から key=value 形式の DSN を組み立てる。
 func (d *DatabaseConfig) DSN() string {
+	if d.URL != "" {
+		return d.URL
+	}
 	return fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		d.Host, d.Port, d.User, d.Password, d.DBName, d.SSLMode,

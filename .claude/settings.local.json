@@ -61,7 +61,11 @@
       "Bash(jq:*)",
       "Bash(netstat:*)",
       "Bash(docker info:*)",
-      "Bash(docker rm:*)"
+      "Bash(docker rm:*)",
+      "Bash(git rm *)",
+      "Bash(go vet *)",
+      "Bash(xxd)",
+      "Bash(git config *)"
     ],
     "deny": [],
     "ask": []

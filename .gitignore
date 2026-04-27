@@ -77,3 +77,11 @@ web-build/
 
 # TypeScript
 *.tsbuildinfo
+
+# Terraform (旧 AWS インフラ。state ファイルはローカルにのみ残置)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
